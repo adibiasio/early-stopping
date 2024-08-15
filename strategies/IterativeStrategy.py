@@ -1,17 +1,27 @@
 from abc import abstractmethod
-from typing import List, Callable
+from typing import Callable
 
 from strategies.AbstractStrategy import AbstractStrategy
 
 
 class IterativeStrategy(AbstractStrategy):
-    def __init__(self, patience: Callable[[int], int] = lambda x : 0, sliding_window: int = 1, min_delta: float | int = 0):
+    _short_kwargs = AbstractStrategy._short_kwargs.copy()
+    _short_kwargs.update(
+        {
+            "sliding_window": "sw",
+            "min_delta": "md",
+        }
+    )
+
+    def __init__(
+        self,
+        sliding_window: int = 1,
+        min_delta: float | int = 0,
+        callbacks: list[Callable[[int, float, int, int], None]] = None,
+    ):
         """
         Parameters:
         --------------
-        patience
-            patience function
-
         sliding
             window size for averaging last n errors
 
@@ -27,50 +37,90 @@ class IterativeStrategy(AbstractStrategy):
         if min_delta and not isinstance(min_delta, (int, float)):
             raise ValueError("Minimum Delta parameter must be an integer or float.")
 
-        if patience and not callable(patience):
-            raise ValueError("Patience function must be of format p(int) -> int")
-
-        self.patience = patience
         self.sliding_window = sliding_window
         self.min_delta = min_delta
-
+        self.callbacks = callbacks
 
     # TODO: ensure that for patience of 1 million and 2 million there are the same ranks
-    def _run(self, curve: List[float]):
+    # TODO: only update patience value when new best iteration has been found
+    def _run(self, curve: list[float]):
         """
         Parameters:
         --------------
         curve
-        
+
         Return:
         --------------
         best iteration (zero indexed)
 
         total iterations (zero indexed)
         """
-        counter = 0
         best_iter = 0
         best_error = None
         sliding_sum = 0
+        iter_wo_improvement = 0
+        patience = self.patience(1)
+
+        self.runCallbacks("before_simulation", strategy=self)
+
         for iter, error in enumerate(curve):
+            self.runCallbacks(
+                "before_iter",
+                strategy=self,
+                iter=iter,
+                metric=error,
+                iter_wo_improvement=iter_wo_improvement,
+                patience=patience,
+            )
+
             if self.sliding_window > 1:
                 n = min(iter + 1, self.sliding_window)
                 sliding_sum += error
                 sliding_sum -= curve[iter - n] if iter - n >= 0 else 0
                 error = sliding_sum / n
+
             if best_error is None:
                 best_error = error
+
             elif error >= best_error + self.min_delta:
-                counter += 1
-                if counter >= self.patience(iter + 1):
+                iter_wo_improvement += 1
+                if iter_wo_improvement >= patience:
+                    # after iteration callbacks
+                    self.runCallbacks(
+                        "after_iter",
+                        strategy=self,
+                        iter=iter,
+                        metric=error,
+                        iter_wo_improvement=iter_wo_improvement,
+                        patience=patience,
+                    )
                     break
+
             else:
                 best_iter = iter
                 best_error = error
-                counter = 0
+                iter_wo_improvement = 0
+                patience = self.patience(iter + 1)
 
+            # after iteration callbacks
+            self.runCallbacks(
+                "after_iter",
+                strategy=self,
+                iter=iter,
+                metric=error,
+                iter_wo_improvement=iter_wo_improvement,
+                patience=patience,
+            )
+
+        self.runCallbacks("after_simulation", strategy=self)
         return best_iter, iter
 
+    def runCallbacks(self, method: str, **kwargs):
+        if self.callbacks:
+            for callback in self.callbacks:
+                func = getattr(callback, method)
+                if func(**kwargs):
+                    break
 
     @property
     def name(self):
@@ -92,12 +142,14 @@ class IterativeStrategy(AbstractStrategy):
 
         return base
 
+    @property
+    def patience(self) -> Callable[[int], int]:
+        return lambda x: 0
 
     @abstractmethod
     def _base_name(self):
         pass
 
-
     @classmethod
     def user_params(cls) -> "set[str]":
-        return super().user_params().union({ "sliding_window", "min_delta" })
+        return super().user_params().union({"sliding_window", "min_delta"})

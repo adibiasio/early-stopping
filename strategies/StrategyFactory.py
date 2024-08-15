@@ -1,10 +1,13 @@
 from typing import Type
 
 from strategies.AbstractStrategy import AbstractStrategy
+from strategies.AutoGluonAdaptivePatience import AutoGluonAdaptivePatienceStrategy
 from strategies.FixedIterationStrategy import FixedIterationStrategy
 from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
 from strategies.MinDeltaStrategy import MinDeltaStrategy
-from strategies.PolynomialAdaptivePatienceStrategy import PolynomialAdaptivePatienceStrategy
+from strategies.PolynomialAdaptivePatienceStrategy import (
+    PolynomialAdaptivePatienceStrategy,
+)
 from strategies.SimplePatienceStrategy import SimplePatienceStrategy
 from strategies.SlidingWindowStrategy import SlidingWindowStrategy
 
@@ -14,7 +17,7 @@ class StrategyFactory:
     Patience Based Stopping Strategies:
         Patience is defined as the number of iterations the training process
         will continue for without any observed improvements in the model before
-        stopping. The StrategyFactory supports constant patience values or 
+        stopping. The StrategyFactory supports constant patience values or
         patience defined as a function of the current iteration. See below.
 
         Strategies:
@@ -27,8 +30,8 @@ class StrategyFactory:
             polynomial_adaptive_patience: PolynomialAdaptivePatienceStrategy
                 p(x) = ax^n + b
 
-        Each of the strategies listed above support variations with sliding window 
-        and minimum delta. Read more about these stopping strategies in the "Non-Patience 
+        Each of the strategies listed above support variations with sliding window
+        and minimum delta. Read more about these stopping strategies in the "Non-Patience
         Based" Stopping Strategies section. These variations follow the strategy naming
         scheme below, assuming the original name is STRATEGY:
 
@@ -36,7 +39,7 @@ class StrategyFactory:
                 sliding_window_STRATEGY
                 STRATEGY_with_min_delta
                 sliding_window_STRATEGY_with_min_delta
-        
+
         To use these variations, simply call make_strategy with the umbrella strategy name
         and relevant parameters for that variation. e.g.
             factory = StrategyFactory()
@@ -63,6 +66,7 @@ class StrategyFactory:
         "simple_patience": SimplePatienceStrategy,
         "linear_adaptive_patience": LinearAdaptivePatienceStrategy,
         "polynomial_adaptive_patience": PolynomialAdaptivePatienceStrategy,
+        "autogluon_adaptive_patience": AutoGluonAdaptivePatienceStrategy,
         "fixed_iteration": FixedIterationStrategy,
         "min_delta": MinDeltaStrategy,
         "sliding_window": SlidingWindowStrategy,
@@ -71,11 +75,9 @@ class StrategyFactory:
     def __init__(self):
         pass
 
-
     @classmethod
     def strategies(cls) -> dict:
         return cls._strategy_class_map
-
 
     @classmethod
     def get_strategy_class(cls, name: str) -> Type[AbstractStrategy]:
@@ -83,7 +85,6 @@ class StrategyFactory:
             raise ValueError("Invalid Strategy Name")
 
         return cls._strategy_class_map[name]
-
 
     def make_strategy(self, name: str, **kwargs) -> AbstractStrategy:
         if name not in self._strategy_class_map:

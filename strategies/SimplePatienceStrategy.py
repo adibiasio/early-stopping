@@ -1,22 +1,33 @@
-from strategies.PolynomialAdaptivePatienceStrategy import PolynomialAdaptivePatienceStrategy
+from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
 
-class SimplePatienceStrategy(PolynomialAdaptivePatienceStrategy):
+
+class SimplePatienceStrategy(LinearAdaptivePatienceStrategy):
     """
     Patience Equation: p(x) = p
     """
-    def __init__(self, patience: int = 10, **kwargs):
-        super().__init__(a=0, b=patience, **kwargs)
 
+    _name = "simple_patience"
+    _short_name = "SP"
+    _short_kwargs = LinearAdaptivePatienceStrategy._short_kwargs.copy()
+    _short_kwargs.update(
+        {
+            "b": "p",
+        }
+    )
 
-    def _base_name(self) -> str:
-        return "simple_patience"
+    def __init__(self, patience: int = 0, **kwargs):
+        super().__init__(b=patience, **kwargs)
 
+    @property
+    def patience(self):
+        return super().patience
+
+    @patience.setter
+    def patience(self, new_patience):
+        self.b = new_patience
 
     @classmethod
     def user_params(cls) -> "set[str]":
         params = super().user_params()
         params.discard("a")
-        params.discard("b")
-        params.discard("degree")
-        params.add("patience")
         return params

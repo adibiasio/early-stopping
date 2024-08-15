@@ -3,3 +3,11 @@ __pycache__/
 .pytest_cache/
 
 _*
+
+SimulatorRuns
+
+curves
+data
+
+# TODO: delete this folder and remove from gitignore
+out
