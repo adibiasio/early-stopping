@@ -8,26 +8,37 @@ class SimplePatienceStrategy(LinearAdaptivePatienceStrategy):
 
     _name = "simple_patience"
     _short_name = "SP"
-    _short_kwargs = LinearAdaptivePatienceStrategy._short_kwargs.copy()
-    _short_kwargs.update(
-        {
-            "b": "p",
-        }
-    )
 
     def __init__(self, patience: int = 0, **kwargs):
         super().__init__(b=patience, **kwargs)
 
     @property
     def patience(self):
+        """
+        Redefined here because cannot change property
+        setter without also redefining property in same class.
+        """
         return super().patience
 
     @patience.setter
-    def patience(self, new_patience):
+    def patience(self, new_patience: int):
+        """
+        Note that patience is alias for b in 
+        the polynomial patience equation.
+
+        Parameters:
+        ----------
+        new_patience: int
+            The new value for patience.
+        """
         self.b = new_patience
 
     @classmethod
-    def user_params(cls) -> "set[str]":
-        params = super().user_params()
-        params.discard("a")
-        return params
+    def kwargs(cls) -> dict[str, str]:
+        kwargs = super().kwargs()
+        kwargs.pop("a", None)
+        kwargs.pop("b", None)
+        kwargs.update({
+            "patience": "p",
+        })
+        return kwargs

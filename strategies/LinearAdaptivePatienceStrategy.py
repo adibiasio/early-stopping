@@ -15,7 +15,7 @@ class LinearAdaptivePatienceStrategy(PolynomialAdaptivePatienceStrategy):
         super().__init__(a=a, b=b, **kwargs)
 
     @classmethod
-    def user_params(cls) -> "set[str]":
-        params = super().user_params()
-        params.discard("degree")
-        return params
+    def kwargs(cls) -> dict[str, str]:
+        kwargs = super().kwargs()
+        kwargs.pop("degree", None)
+        return kwargs

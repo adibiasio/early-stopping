@@ -10,7 +10,3 @@ class MinDeltaStrategy(IterativeStrategy):
 
     def _base_name(self):
         return self._name
-
-    @classmethod
-    def user_params(cls) -> "set[str]":
-        return {"min_delta", "sliding_window"}

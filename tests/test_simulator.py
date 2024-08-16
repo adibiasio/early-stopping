@@ -15,7 +15,7 @@ from strategies.StrategyFactory import StrategyFactory
 
 def strategy_configs():
     configs = []
-    strategies = StrategyFactory.strategies()
+    strategies = StrategyFactory.strategy_map()
     for strategy, strategy_class in strategies.items():
 
         params = strategy_class.user_params()

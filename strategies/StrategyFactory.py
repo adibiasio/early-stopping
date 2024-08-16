@@ -14,6 +14,10 @@ from strategies.SlidingWindowStrategy import SlidingWindowStrategy
 
 class StrategyFactory:
     """
+    General Usage:
+        For guidance on supported strategies and their parameters, call
+        the help() method on your StrategyFactory object or class.
+
     Patience Based Stopping Strategies:
         Patience is defined as the number of iterations the training process
         will continue for without any observed improvements in the model before
@@ -72,11 +76,15 @@ class StrategyFactory:
         "sliding_window": SlidingWindowStrategy,
     }
 
-    def __init__(self):
-        pass
+    def make_strategy(self, name: str, **kwargs) -> AbstractStrategy:
+        if name not in self._strategy_class_map:
+            raise ValueError("Invalid Strategy Name")
+
+        strategy = self._strategy_class_map[name]
+        return strategy(**kwargs)
 
     @classmethod
-    def strategies(cls) -> dict:
+    def strategy_map(cls) -> dict:
         return cls._strategy_class_map
 
     @classmethod
@@ -86,9 +94,9 @@ class StrategyFactory:
 
         return cls._strategy_class_map[name]
 
-    def make_strategy(self, name: str, **kwargs) -> AbstractStrategy:
-        if name not in self._strategy_class_map:
-            raise ValueError("Invalid Strategy Name")
-
-        strategy = self._strategy_class_map[name]
-        return strategy(**kwargs)
+    @classmethod
+    def help(cls) -> None:
+        print("Supported Strategies:\n")
+        for name, strategy in cls._strategy_class_map.items():
+            print(f"\t{name}: {strategy.__name__}")
+            print(f"\tValid parameters: {strategy.user_params()}\n")

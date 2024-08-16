@@ -7,13 +7,6 @@ class FixedIterationStrategy(AbstractStrategy):
     _name = "fixed_iterations"
     _short_name = "FI"
 
-    _short_kwargs = AbstractStrategy._short_kwargs.copy()
-    _short_kwargs.update(
-        {
-            "n_iter": "i",
-        }
-    )
-
     def __init__(self, n_iter: int = 10):
         super().__init__()
 
@@ -40,5 +33,9 @@ class FixedIterationStrategy(AbstractStrategy):
         return self._name
 
     @classmethod
-    def user_params(cls) -> "set[str]":
-        return super().user_params().union({"n_iter"})
+    def kwargs(cls) -> dict[str, str]:
+        kwargs = super().kwargs()
+        kwargs.update({
+            "n_iter": "i",
+        })
+        return kwargs

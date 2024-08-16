@@ -10,14 +10,6 @@ class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
 
     _name = "polynomial_adaptive_patience"
     _short_name = "PP"
-    _short_kwargs = AbstractPatienceStrategy._short_kwargs.copy()
-    _short_kwargs.update(
-        {
-            "a": "a",
-            "b": "b",
-            "degree": "n",
-        }
-    )
 
     def __init__(
         self,
@@ -47,9 +39,6 @@ class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
 
         return func
 
-    def _base_name(self) -> str:
-        return self._base_class()._name
-
     def _base_class(self) -> AbstractPatienceStrategy:
         from strategies.LinearAdaptivePatienceStrategy import (
             LinearAdaptivePatienceStrategy,
@@ -62,20 +51,35 @@ class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
             return LinearAdaptivePatienceStrategy
         return self.__class__
 
-    def __str__(self) -> str:
-        base_class = self._base_class()
-        params = base_class.user_params()
-        short_params = base_class._short_kwargs
+    def _base_name(self) -> str:
+        return self._base_class()._name
 
+    def __str__(self) -> str:
+        """
+        Returns:
+        --------
+        str:
+            A single line string listing a strategy and its configurations 
+            with abbreviated strategy/parameter names and rounded values.
+        """
+        # TODO: make use of abstract strategy __str__ method
+        # code dupe, but not sure of a good way to reuse code here^
         result = []
-        for param in params:
-            result.append(f"{short_params[param]}={round(getattr(self, param),3)}")
+        base_class = self._base_class()
+        for param, short in base_class.kwargs().items():
+            val = self.b if param == "patience" else getattr(self, param)
+            result.append(f"{short}={round(val,3)}")
 
         result.sort()
-        result.insert(0, self._base_name())
-
+        result.insert(0, base_class._short_name)
         return ";".join(result)
 
     @classmethod
-    def user_params(cls) -> "set[str]":
-        return super().user_params().union({"a", "b", "degree"})
+    def kwargs(cls) -> dict[str, str]:
+        kwargs = super().kwargs()
+        kwargs.update({
+            "a": "a",
+            "b": "b",
+            "degree": "n",
+        })
+        return kwargs

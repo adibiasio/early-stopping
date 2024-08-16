@@ -5,14 +5,6 @@ from strategies.AbstractStrategy import AbstractStrategy
 
 
 class IterativeStrategy(AbstractStrategy):
-    _short_kwargs = AbstractStrategy._short_kwargs.copy()
-    _short_kwargs.update(
-        {
-            "sliding_window": "sw",
-            "min_delta": "md",
-        }
-    )
-
     def __init__(
         self,
         sliding_window: int = 1,
@@ -142,14 +134,19 @@ class IterativeStrategy(AbstractStrategy):
 
         return base
 
-    @property
-    def patience(self) -> Callable[[int], int]:
-        return lambda x: 0
-
     @abstractmethod
     def _base_name(self):
         pass
 
+    @property
+    def patience(self) -> Callable[[int], int]:
+        return lambda x: 0
+
     @classmethod
-    def user_params(cls) -> "set[str]":
-        return super().user_params().union({"sliding_window", "min_delta"})
+    def kwargs(cls) -> dict[str, str]:
+        kwargs = super().kwargs()
+        kwargs.update({
+            "sliding_window": "sw",
+            "min_delta": "md",
+        })
+        return kwargs

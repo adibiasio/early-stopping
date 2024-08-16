@@ -101,7 +101,7 @@ class PatienceStrategyCallback(IterativeStrategyCallback):
         self,
         strategy: IterativeStrategy,
         iter: int,
-        error: float,
+        metric: float,
         iter_wo_improvement: int,
         patience: int,
     ) -> bool:
@@ -132,18 +132,18 @@ class LearningCurveStrategyCallback(IterativeStrategyCallback):
         self,
         strategy: IterativeStrategy,
         iter: int,
-        error: float,
+        metric: float,
         iter_wo_improvement: int,
         patience: int,
     ) -> bool:
         if "iter" not in self.results:
             self.results["iter"] = []
 
-        if "error" not in self.results:
-            self.results["error"] = []
+        if "metric" not in self.results:
+            self.results["metric"] = []
 
         self.results["iter"].append(iter)
-        self.results["error"].append(error)
+        self.results["metric"].append(metric)
 
         return False
 
@@ -200,8 +200,8 @@ class GraphSimulationCallback(SimulationCallback):
         num_axes = total_curves * total_configs  # total_simulations
 
         # Find a suitable layout (e.g., square root approach)
-        cols = int(np.ceil(np.sqrt(num_axes)))
-        rows = int(np.ceil(num_axes / cols))
+        cols = max(int(np.ceil(np.sqrt(num_axes))), 1)
+        rows = max(int(np.ceil(num_axes / cols)), 1)
 
         # create figure and axes
         self.figure, _ = plt.subplots(rows, cols, figsize=(cols * 4, rows * 4))
@@ -219,6 +219,10 @@ class GraphSimulationCallback(SimulationCallback):
         self.figure.suptitle(self.strategy_callback.name, fontsize=24, y=0.985)
         self.figure.legend(*self.legend)
         self.figure.tight_layout(pad=2.0)
+
+        # TODO: this keeps writing over previous task's saved image
+        # figure out best way to handle this, since do we want a lot of images for each task?
+        # more helpful to have one image across all strategies for easy comparison
 
         import os
 

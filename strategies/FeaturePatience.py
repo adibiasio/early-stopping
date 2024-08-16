@@ -21,6 +21,8 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
         min_rows: int = 10000,
         **kwargs,
     ):
+        # TODO: i think b is supposed to be set to initial setting of min_patience here
+        # but i refactored stuff, so it got messed up
         super().__init__(**kwargs)
 
         if "num_rows_train" not in metadata:
@@ -42,35 +44,55 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
         self.num_rows_train = num_rows_train
         self.min_rows = min_rows
 
-    @property
-    def patience(self) -> Callable[[int], int]:
-        base_fn = super().patience
+    def _patience_fn(self) -> Callable[[int], int]:
+        base_fn = super()._patience_fn
 
-        def _patience_fn(iter):
+        def func(iter):
             modifier = (
                 1
                 if self.num_rows_train <= self.min_rows
                 else self.min_rows / self.num_rows_train
             )
-            simple_early_stopping_rounds = max(
+            self.min_patience = max(
                 round(modifier * self.max_patience),
                 self.min_patience,
             )
 
-            self.min_patience = simple_early_stopping_rounds
-
             return base_fn(iter)
 
-        return _patience_fn
+        return func
+
+    # @property
+    # def patience(self) -> Callable[[int], int]:
+    #     base_fn = super().patience
+
+    #     def _patience_fn(iter):
+    #         modifier = (
+    #             1
+    #             if self.num_rows_train <= self.min_rows
+    #             else self.min_rows / self.num_rows_train
+    #         )
+    #         self.min_patience = max(
+    #             round(modifier * self.max_patience),
+    #             self.min_patience,
+    #         )
+
+    #         return base_fn(iter)
+
+    #     return _patience_fn
 
     def _base_name(self) -> str:
         return self._name
 
+    # TODO: figure out how to handle num_rows_train
+    # because you don't set it directly currently
+    # (you pass in metadata object and use that to 
+    # set num_rows_train)
     @classmethod
-    def user_params(cls) -> "set[str]":
-        params = super().user_params()
-        params.discard("degree")
-        params = params.union(
-            {"num_rows_train", "min_patience", "max_patience", "min_rows"}
-        )
-        return params
+    def kwargs(cls) -> dict[str, str]:
+        kwargs = super().kwargs()
+        kwargs.update({
+            "num_rows_train": "rt",
+            "min_rows": "mr",
+        })
+        return kwargs

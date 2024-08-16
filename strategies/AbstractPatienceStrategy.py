@@ -9,8 +9,6 @@ class AbstractPatienceStrategy(IterativeStrategy):
     def __init__(self, min_patience: int = 10, max_patience: int = 10000, **kwargs):
         super().__init__(**kwargs)
 
-        # TODO: shorthand names???
-
         if not isinstance(min_patience, int):
             raise ValueError(f"Invalid parameter min_patience={min_patience}")
 
@@ -22,7 +20,7 @@ class AbstractPatienceStrategy(IterativeStrategy):
 
     @property
     def patience(self) -> Callable[[int], int]:
-        base_fn = self._patience_fn
+        base_fn = self._patience_fn()
 
         def func(iter):
             p = base_fn(iter)
@@ -38,5 +36,10 @@ class AbstractPatienceStrategy(IterativeStrategy):
         pass
 
     @classmethod
-    def user_params(cls) -> "set[str]":
-        return super().user_params().union({"min_patience", "max_patience"})
+    def kwargs(cls) -> dict[str, str]:
+        kwargs = super().kwargs()
+        kwargs.update({
+            "min_patience": "maxp",
+            "max_patience": "minp",
+        })
+        return kwargs
