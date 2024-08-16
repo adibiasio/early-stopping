@@ -1,7 +1,7 @@
 from typing import Type
 
 from strategies.AbstractStrategy import AbstractStrategy
-from strategies.AutoGluonAdaptivePatience import AutoGluonAdaptivePatienceStrategy
+from strategies.FeaturePatience import FeaturePatienceStrategy
 from strategies.FixedIterationStrategy import FixedIterationStrategy
 from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
 from strategies.MinDeltaStrategy import MinDeltaStrategy
@@ -66,7 +66,7 @@ class StrategyFactory:
         "simple_patience": SimplePatienceStrategy,
         "linear_adaptive_patience": LinearAdaptivePatienceStrategy,
         "polynomial_adaptive_patience": PolynomialAdaptivePatienceStrategy,
-        "autogluon_adaptive_patience": AutoGluonAdaptivePatienceStrategy,
+        "feature_patience": FeaturePatienceStrategy,
         "fixed_iteration": FixedIterationStrategy,
         "min_delta": MinDeltaStrategy,
         "sliding_window": SlidingWindowStrategy,

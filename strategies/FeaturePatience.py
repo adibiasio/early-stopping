@@ -1,28 +1,27 @@
 from typing import Callable
 
-from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
+from strategies.PolynomialAdaptivePatienceStrategy import (
+    PolynomialAdaptivePatienceStrategy,
+)
 
 
-class AutoGluonAdaptivePatienceStrategy(LinearAdaptivePatienceStrategy):
+class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
     """
-    Patience Equation: p(x) = ax + b
+    Patience equation is influenced by features of the dataset currently being "trained" on.
     """
 
-    _name = "autogluon_adaptive_patience"
-    _short_name = "AGP"
+    _name = "feature_patience"
+    _short_name = "FP"
 
     needs_curve_metadata = True
 
     def __init__(
         self,
         metadata: dict,
-        a: float | int = 0.3,
-        min_patience: int = 20,
-        max_patience: int = 300,
         min_rows: int = 10000,
         **kwargs,
     ):
-        super().__init__(a=a, b=min_patience, **kwargs)
+        super().__init__(**kwargs)
 
         if "num_rows_train" not in metadata:
             raise ValueError(
@@ -30,14 +29,17 @@ class AutoGluonAdaptivePatienceStrategy(LinearAdaptivePatienceStrategy):
             )
         num_rows_train = metadata["num_rows_train"]
 
-        params = [num_rows_train, min_patience, max_patience, min_rows]
-        for param in params:
-            if not isinstance(param, int):
-                raise ValueError(f"Invalid parameter {param} for strategy {self.name}")
+        if not isinstance(num_rows_train, int):
+            raise ValueError(
+                f"Invalid parameter num_rows_train={num_rows_train} for strategy {self.name}"
+            )
+
+        if not isinstance(min_rows, int):
+            raise ValueError(
+                f"Invalid parameter min_rows={min_rows} for strategy {self.name}"
+            )
 
         self.num_rows_train = num_rows_train
-        self.min_patience = min_patience
-        self.max_patience = max_patience
         self.min_rows = min_rows
 
     @property

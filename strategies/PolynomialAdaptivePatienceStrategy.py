@@ -2,9 +2,6 @@ from typing import Callable
 
 from strategies.AbstractPatienceStrategy import AbstractPatienceStrategy
 
-# TODO: also test adding min/max patience parameter values for these strategies
-# (refer to autogluon patience strategy)
-
 
 class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
     """
@@ -27,8 +24,6 @@ class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
         a: float | int = 0,
         b: int = 0,
         degree: float | int = 1,
-        min_patience: int = 10,
-        max_patience: int = 10000,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -45,19 +40,12 @@ class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
         self.a = a
         self.b = b
         self.degree = degree
-        self.min_patience = min_patience
-        self.max_patience = max_patience
 
-    @property
-    def patience(self) -> Callable[[int], int]:
-        def _patience_fn(iter):
-            p = round(self.a * (iter**self.degree) + self.b)
-            return min(
-                self.max_patience,
-                max(self.min_patience, p),
-            )
+    def _patience_fn(self) -> Callable[[int], int]:
+        def func(iter):
+            return round(self.a * (iter**self.degree) + self.b)
 
-        return _patience_fn
+        return func
 
     def _base_name(self) -> str:
         return self._base_class()._name

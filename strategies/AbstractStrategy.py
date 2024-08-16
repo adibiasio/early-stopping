@@ -13,13 +13,11 @@ class AbstractStrategy(ABC):
         "percent_iter_diff",
     ]
 
+    _name = ""
     _short_name = ""
     _short_kwargs = {}
 
     needs_curve_metadata = False
-
-    def __init__(self):
-        pass
 
     def simulate(
         self, stopping_curve: list[float], eval_curve: list[float]
@@ -82,10 +80,24 @@ class AbstractStrategy(ABC):
             else:
                 print(f"Warning: '{key}' is not an attribute of the instance.")
 
+    # @classmethod
+    # def init_short_kwargs(cls, parent_class, new_short_kwargs):
+    #     _short_kwargs = parent_class._short_kwargs.copy()
+    #     _short_kwargs.update(
+    #         {
+    #             "sliding_window": "sw",
+    #             "min_delta": "md",
+    #         }
+    #     )
+    #     return _short_kwargs
+
     @property
-    @abstractmethod
     def name(self):
-        pass
+        return self._name
+
+    @classmethod
+    def user_params(cls) -> "set[str]":
+        return set()
 
     def __str__(self) -> str:
         params = self.user_params()
@@ -96,7 +108,3 @@ class AbstractStrategy(ABC):
             result.append(f"{short_params[param]}={round(getattr(self, param),3)}")
 
         return ";".join(result)
-
-    @classmethod
-    def user_params(cls) -> "set[str]":
-        return set()

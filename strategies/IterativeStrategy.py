@@ -22,7 +22,7 @@ class IterativeStrategy(AbstractStrategy):
         """
         Parameters:
         --------------
-        sliding
+        sliding_window
             window size for averaging last n errors
 
         min_delta

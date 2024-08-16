@@ -156,13 +156,13 @@ class StoppingSimulator:
         This strategy dictionary is properly formatted and can be directly passed into run() or rank()
         """
         # df should already be sorted by rank
-        topK = df.copy()
-        topK["params"] = topK.apply(
+        df = df.copy()
+        df["params"] = df.apply(
             lambda x: tuple([*zip(*x["params"].items())]), axis=1
         )
-        topK["param_names"] = topK.apply(lambda x: x["params"][0], axis=1)
-        topK["param_values"] = topK.apply(lambda x: x["params"][1], axis=1)
-        groups = topK.groupby(by="strategy")
+        df["param_names"] = df.apply(lambda x: x["params"][0], axis=1)
+        df["param_values"] = df.apply(lambda x: x["params"][1], axis=1)
+        groups = df.groupby(by="strategy")
 
         strategies = {}
         for strategy, group in groups:
