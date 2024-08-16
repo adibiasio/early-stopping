@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Callable
 
+from callbacks import IterativeStrategyCallback
 from strategies.AbstractStrategy import AbstractStrategy
 
 
@@ -9,7 +10,7 @@ class IterativeStrategy(AbstractStrategy):
         self,
         sliding_window: int = 1,
         min_delta: float | int = 0,
-        callbacks: list[Callable[[int, float, int, int], None]] = None,
+        callbacks: list[IterativeStrategyCallback] = [],
     ):
         """
         Parameters:
@@ -34,7 +35,6 @@ class IterativeStrategy(AbstractStrategy):
         self.callbacks = callbacks
 
     # TODO: ensure that for patience of 1 million and 2 million there are the same ranks
-    # TODO: only update patience value when new best iteration has been found
     def _run(self, curve: list[float]):
         """
         Parameters:
@@ -106,6 +106,16 @@ class IterativeStrategy(AbstractStrategy):
 
         self.runCallbacks("after_simulation", strategy=self)
         return best_iter, iter
+
+    def addCallback(self, new_callback: IterativeStrategyCallback):
+        if not isinstance(new_callback, IterativeStrategyCallback):
+            raise ValueError(f"Invalid callback={new_callback}")
+
+        if self.callbacks:
+            self.callbacks.append(new_callback)
+        else:
+            self.callbacks = [new_callback]
+
 
     def runCallbacks(self, method: str, **kwargs):
         if self.callbacks:

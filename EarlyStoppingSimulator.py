@@ -186,6 +186,12 @@ class StoppingSimulator:
 
         self.callbacks.append(callback)
 
+    def _runCallbacks(self, method: str, **kwargs):
+        if self.callbacks:
+            for callback in self.callbacks:
+                func = getattr(callback, method)
+                func(**kwargs)
+
     def clear(self):
         self.simulations = None
         self.tasks = []
@@ -227,11 +233,12 @@ class StoppingSimulator:
         # calling apply on each row to apply simulations?
         # use wrapper fn to do all the strategy and callback setup steps
 
-        if self.callbacks:
-            for callback in self.callbacks:
-                callback.before_task(
-                    curve_data=model_data, strategies=strategies, filters=filters
-                )
+        self._runCallbacks(
+            "before_task",
+            curve_data=model_data,
+            strategies=strategies,
+            filters=filters,
+        )
 
         results = []
         for model, data in model_data.items():
@@ -270,14 +277,13 @@ class StoppingSimulator:
                             }
                             strategy.update_params(**params)
 
-                            if self.callbacks:
-                                for callback in self.callbacks:
-                                    callback.before_strategy(
-                                        model=model,
-                                        metric=metric,
-                                        eval_set=eval_set,
-                                        strategy=strategy,
-                                    )
+                            self._runCallbacks(
+                                "before_strategy",
+                                model=model,
+                                metric=metric,
+                                eval_set=eval_set,
+                                strategy=strategy
+                            )
 
                             results.append(
                                 task_info
@@ -288,18 +294,15 @@ class StoppingSimulator:
                                 )
                             )
 
-                            if self.callbacks:
-                                for callback in self.callbacks:
-                                    callback.after_strategy(
-                                        model=model,
-                                        metric=metric,
-                                        eval_set=eval_set,
-                                        strategy=strategy,
-                                    )
+                            self._runCallbacks(
+                                "after_strategy",
+                                model=model,
+                                metric=metric,
+                                eval_set=eval_set,
+                                strategy=strategy
+                            )
 
-        if self.callbacks:
-            for callback in self.callbacks:
-                callback.after_task()
+        self._runCallbacks("after_task")
 
         columns = [
             "dataset",

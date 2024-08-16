@@ -96,6 +96,8 @@ class PatienceStrategyCallback(IterativeStrategyCallback):
 
     def __init__(self, results: list) -> None:
         self.results = results
+        self.x = "iter"
+        self.y = self.x
 
     def before_iter(
         self,
@@ -127,6 +129,8 @@ class LearningCurveStrategyCallback(IterativeStrategyCallback):
 
     def __init__(self, results: list) -> None:
         self.results = results
+        self.x = "iter"
+        self.y = "metric"
 
     def before_iter(
         self,
@@ -230,31 +234,28 @@ class GraphSimulationCallback(SimulationCallback):
         self.figure.savefig(os.path.join(self.path, file_name))
 
     def before_strategy(
-        self, model: str, metric: str, eval_set: str, strategy: AbstractStrategy
+        self, model: str, metric: str, eval_set: str, strategy: IterativeStrategy
     ):
         """Run before the strategy simulation process."""
         self.results = {}
+        # TODO: maybe instead of always creating new callback, I can just update self.results field
         new_callback = self.strategy_callback(results=self.results)
-
-        if strategy.callbacks:
-            strategy.callbacks.append(new_callback)
-        else:
-            strategy.callbacks = [new_callback]
+        strategy.addCallback(new_callback=new_callback)
 
     def after_strategy(
-        self, model: str, metric: str, eval_set: str, strategy: AbstractStrategy
+        self, model: str, metric: str, eval_set: str, strategy: IterativeStrategy
     ):
         """Run after the strategy simulation process."""
         ax = next(self.axes)
-        self.plot_lines("iter", ax, **self.results)
+        callback = strategy.callbacks.pop()
+        self.plot_lines(callback.x, ax, y_label=callback.y, **self.results)
 
         if self.legend is None:
             self.legend = ax.get_legend_handles_labels()
 
         ax.set_title(f"{str(strategy)}\n{model}-{metric}-{eval_set}")
-        strategy.callbacks.pop()
 
-    def plot_lines(self, x: str, ax, **kwargs):
+    def plot_lines(self, x: str, ax, y_label: str, **kwargs):
         if len(kwargs) < 2:
             raise ValueError("Not enough lines to construct line plot!")
 
@@ -269,5 +270,5 @@ class GraphSimulationCallback(SimulationCallback):
 
         ax.legend().set_visible(False)
         ax.set_xlabel(x_label)
-        ax.set_ylabel(x_label)
+        ax.set_ylabel(y_label)
         ax.grid(True)
