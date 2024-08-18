@@ -21,8 +21,6 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
         min_rows: int = 10000,
         **kwargs,
     ):
-        # TODO: i think b is supposed to be set to initial setting of min_patience here
-        # but i refactored stuff, so it got messed up
         super().__init__(**kwargs)
 
         if "num_rows_train" not in metadata:
@@ -44,8 +42,16 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
         self.num_rows_train = num_rows_train
         self.min_rows = min_rows
 
+        from strategies.SimplePatienceStrategy import SimplePatienceStrategy
+
+        base_class = self._base_class()
+        if base_class != SimplePatienceStrategy:
+            self.b = self.min_patience
+
     def _patience_fn(self) -> Callable[[int], int]:
-        base_fn = super()._patience_fn
+        from strategies.SimplePatienceStrategy import SimplePatienceStrategy
+
+        base_fn = super()._patience_fn()
 
         def func(iter):
             modifier = (
@@ -53,46 +59,35 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
                 if self.num_rows_train <= self.min_rows
                 else self.min_rows / self.num_rows_train
             )
-            self.min_patience = max(
+            rounds = max(
                 round(modifier * self.max_patience),
                 self.min_patience,
             )
 
+            base_class = self._base_class()
+            if base_class == SimplePatienceStrategy:
+                self.b = rounds
+            else:
+                self.min_patience = rounds
+
             return base_fn(iter)
 
         return func
-
-    # @property
-    # def patience(self) -> Callable[[int], int]:
-    #     base_fn = super().patience
-
-    #     def _patience_fn(iter):
-    #         modifier = (
-    #             1
-    #             if self.num_rows_train <= self.min_rows
-    #             else self.min_rows / self.num_rows_train
-    #         )
-    #         self.min_patience = max(
-    #             round(modifier * self.max_patience),
-    #             self.min_patience,
-    #         )
-
-    #         return base_fn(iter)
-
-    #     return _patience_fn
 
     def _base_name(self) -> str:
         return self._name
 
     # TODO: figure out how to handle num_rows_train
     # because you don't set it directly currently
-    # (you pass in metadata object and use that to 
+    # (you pass in metadata object and use that to
     # set num_rows_train)
     @classmethod
     def kwargs(cls) -> dict[str, str]:
         kwargs = super().kwargs()
-        kwargs.update({
-            "num_rows_train": "rt",
-            "min_rows": "mr",
-        })
+        kwargs.update(
+            {
+                "num_rows_train": "rt",
+                "min_rows": "mr",
+            }
+        )
         return kwargs

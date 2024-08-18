@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from typing import Callable
 
-from callbacks import IterativeStrategyCallback
 from strategies.AbstractStrategy import AbstractStrategy
 
 
@@ -10,7 +9,7 @@ class IterativeStrategy(AbstractStrategy):
         self,
         sliding_window: int = 1,
         min_delta: float | int = 0,
-        callbacks: list[IterativeStrategyCallback] = [],
+        callbacks: list = [],
     ):
         """
         Parameters:
@@ -32,7 +31,10 @@ class IterativeStrategy(AbstractStrategy):
 
         self.sliding_window = sliding_window
         self.min_delta = min_delta
-        self.callbacks = callbacks
+
+        self.callbacks = []
+        for callback in callbacks:
+            self.addCallback(callback)
 
     # TODO: ensure that for patience of 1 million and 2 million there are the same ranks
     def _run(self, curve: list[float]):
@@ -107,7 +109,9 @@ class IterativeStrategy(AbstractStrategy):
         self.runCallbacks("after_simulation", strategy=self)
         return best_iter, iter
 
-    def addCallback(self, new_callback: IterativeStrategyCallback):
+    def addCallback(self, new_callback):
+        from callbacks import IterativeStrategyCallback
+
         if not isinstance(new_callback, IterativeStrategyCallback):
             raise ValueError(f"Invalid callback={new_callback}")
 
@@ -116,8 +120,9 @@ class IterativeStrategy(AbstractStrategy):
         else:
             self.callbacks = [new_callback]
 
-
     def runCallbacks(self, method: str, **kwargs):
+        # TODO: doesn't support stopping pased on ret value of callback
+        # by using function for running callbacks like this
         if self.callbacks:
             for callback in self.callbacks:
                 func = getattr(callback, method)
@@ -155,8 +160,10 @@ class IterativeStrategy(AbstractStrategy):
     @classmethod
     def kwargs(cls) -> dict[str, str]:
         kwargs = super().kwargs()
-        kwargs.update({
-            "sliding_window": "sw",
-            "min_delta": "md",
-        })
+        kwargs.update(
+            {
+                "sliding_window": "sw",
+                "min_delta": "md",
+            }
+        )
         return kwargs

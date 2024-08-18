@@ -18,7 +18,7 @@ class StrategyCallback(ABC):
         """Run before simulation starts."""
         return
 
-    def after_simulation(self, strategy: IterativeStrategy) -> None:
+    def after_simulation(self, strategy: AbstractStrategy) -> None:
         """Run after simulation is finished."""
         return
 
@@ -216,7 +216,7 @@ class GraphSimulationCallback(SimulationCallback):
         for item in array:
             yield item
 
-    def after_task(self):
+    def after_task(self):  # dataset: str, fold: str
         """
         Create a figure with subplots based on a list of Axes objects.
         """
@@ -226,11 +226,12 @@ class GraphSimulationCallback(SimulationCallback):
 
         # TODO: this keeps writing over previous task's saved image
         # figure out best way to handle this, since do we want a lot of images for each task?
-        # more helpful to have one image across all strategies for easy comparison
+        # or is it more helpful to have one image across all strategies for easy comparison
 
         import os
 
         file_name = self.strategy_callback.file_name
+        # change path to self.path, filename.split(".")[0], filename-dataset-fold)?
         self.figure.savefig(os.path.join(self.path, file_name))
 
     def before_strategy(
@@ -247,7 +248,7 @@ class GraphSimulationCallback(SimulationCallback):
     ):
         """Run after the strategy simulation process."""
         ax = next(self.axes)
-        callback = strategy.callbacks.pop()
+        callback = strategy.callbacks.pop(0)
         self.plot_lines(callback.x, ax, y_label=callback.y, **self.results)
 
         if self.legend is None:

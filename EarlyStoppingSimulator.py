@@ -13,7 +13,7 @@ from callbacks import SimulationCallback
 from strategies.AbstractStrategy import AbstractStrategy
 from strategies.StrategyFactory import StrategyFactory
 from utils.load import load_json
-from utils.s3_utils import download_folder, get_bucket_key, is_s3_url
+from utils.s3_utils import download_folder, is_s3_url
 
 
 class StoppingSimulator:
@@ -46,23 +46,64 @@ class StoppingSimulator:
             "linear_adaptive_patience": {"a": (0.01, 0.51, 0.05), "b": (1, 50, 1)},
         }
 
-    def load_curves(self, path: str, suffix: str = ".json") -> list[str]:
+    def load_curves(
+        self,
+        path: str,
+        suffix: str = ".json",
+        save_path: str | None = None,
+        append: bool = True,
+    ) -> list[str]:
         """
-        Expected input format:
-        local or s3 path to root directory of:
-            agbench run
-            agbench aggregation output
+        Retrieves paths to all learning curve files in directory specified by 'path'.
+        If path points to s3, downloads all curve files to local storage and
+        tracks local paths.
+
+        Parameters:
+        -----------
+        path: str
+            local or s3 path to root directory containing learning curve .json files in
+            the following format:
+                .
+                ├── dataset_a/
+                │   ├── 0/
+                │   │   └── learning_curves.json
+                │   ├── 1/
+                │   │   └── learning_curves.json
+                │   └── 2/
+                │       └── learning_curves.json
+                ├── dataset_b/
+                │   ├── 0/
+                │   │   └── learning_curves.json
+                │   ├── 1/
+                │   │   └── learning_curves.json
+                │   └── 2/
+                │       └── learning_curves.json
+                └── ...
+        suffix: str
+            the common suffix for all learning curve files, i.e. .../learning_curves.json
+            would have a common suffix of 'learning_curves.json' if all curve files were
+            named the same.
+        save_path: str
+            where all of the loaded curve files should be stored locally
+            by default they are stored in the data/ folder of the current run's
+            output dir.
+        append: bool
+            Whether to append to or overwrite the current curve tasks. Default = True
+
+        Returns:
+        --------
+        List[str]: list of local paths to all learning curve files to be included in the simulation
         """
         import glob
 
         if is_s3_url(path):
-            local_path = os.path.join(self.output_dir, self.data_dir_name)
-            if not os.path.exists(local_path):
-                os.mkdir(local_path)
+            if not save_path:
+                save_path = os.path.join(self.output_dir, self.data_dir_name)
+            if not os.path.exists(save_path):
+                os.mkdir(save_path)
 
-            bucket, prefix = get_bucket_key(path)
-            download_folder(bucket=bucket, prefix=prefix, local_dir=local_path)
-            path = local_path
+            download_folder(path=path, local_dir=save_path)
+            path = save_path
 
         if not os.path.isdir(path):
             raise ValueError(f"The path '{path}' is not a valid directory.")
@@ -70,27 +111,69 @@ class StoppingSimulator:
             os.path.join(path, f"**/*{suffix}" if suffix else "*"), recursive=True
         )
 
-        self.tasks = paths
+        if append:
+            self.tasks.extend(paths)
+        else:
+            self.tasks = paths
+
         return self.tasks
 
     def rank(
         self,
         by: str = "error_then_iter",
-        eval_sets: str | list[str] | None = None,
+        eval_sets: str | list[str] | None = ["val", "test"],
         use_cache: bool = False,
         **kwargs,
-    ):
+    ) -> dict[str, pd.DataFrame]:
+        """
+        Ranks strategy simulation results.
+
+        This method will run simulations if the run() method was not previously called or
+        the use_cache flag is not set to True.
+        Access rank dataframes using the getRanks() method.
+
+        Parameters:
+        -----------
+        by: str, default = "error_then_iter"
+            The method used to rank sstrategy simulation results. Possible methods include:
+                error:
+                    Rank strategies by differences between optimal error for a learning curve
+                    and the best error identified, regardless of the number of iterations it took.
+                iter:
+                    Rank strategies by differences between the number of iterations ran before
+                    stopping, regardless of performance.
+                error_then_iter: (default)
+                    Rank strategies by differences between optimal error for a learning curve
+                    and the best error identified, then by the number of iterations it took.
+                iter_then_error:
+                    Rank strategies by differences between the number of iterations ran before
+                    stopping, then by differences in error.
+        eval_sets: str | list[str] | None, default = ["val", "test"],
+            Filter for which eval_sets of the learning curves should be ranked on and used during simulation.
+        use_cache: bool, default = False
+            If the run() method has been called before (i.e. simulator has a simulations dataframe),
+            and use_cache is set to True, the pre-existing simulations dataframe will be used for ranking
+            purposes and the run() method will not be called.
+        **kwargs:
+            Any additional valid parameters listed for the run() method can be passed into rank(),
+            and will be subsequently passed into run().
+
+        Returns:
+        --------
+        dict[str, pd.DataFrame]:
+            A dictionary mapping eval_sets to their rank dataframes.
+        """
         if not use_cache or self.simulations is None:
             self.run(eval_sets=eval_sets, **kwargs)
 
-        eval_sets = self._validate_and_preprocess_filter(
-            filter=eval_sets, default=["val", "test"]
-        )
+        eval_sets = self._validate_and_preprocess_filter(filter=eval_sets)
+
         self.ranks = {}
         for eval_set in eval_sets:
             self.ranks[eval_set] = self._rank(eval_set=eval_set, by=by)
             self.ranks[eval_set].to_csv(
-                os.path.join(self.output_dir, f"{eval_set}-ranks.csv")
+                os.path.join(self.output_dir, f"{eval_set}-ranks.csv"),
+                index=False,
             )
 
         return self.ranks
@@ -102,7 +185,31 @@ class StoppingSimulator:
         metrics: str | list[str] | None = None,
         eval_sets: str | list[str] | None = None,
         mode: str = "ray",
-    ):
+    ) -> pd.DataFrame:
+        """
+        Runs simulations across all strategies.
+
+        Parameters:
+        -----------
+        strategies: dict | None, default = None
+            A dictionary mapping strategies to their parameter configuration lists.
+            More information on the format of strategies can be found in self._preprocess_strategies()
+        models: str | list[str] | None, default = None
+            Filter for which models of the learning curves should be used during simulation.
+        metrics: str | list[str] | None, default = None
+            Filter for which metrics of the learning curves should be used during simulation.
+        eval_sets: str | list[str] | None, default = None
+            Filter for which eval_sets of the learning curves should be used during simulation.
+        mode: str, default = "ray"
+            Can be one of ["seq", "ray"]
+            If "seq", tasks will be run sequentially
+            If "ray", tasks will be run in parallel via ray.
+
+        Returns:
+        --------
+        pd.DataFrame:
+            The pandas dataframe containing all simulation results across the filtered learning curves.
+        """
         if strategies is None:
             strategies = self.default_strategies
         strategies = self._preprocess_strategies(strategies=strategies)
@@ -128,38 +235,67 @@ class StoppingSimulator:
 
         return self.simulations
 
-    def getRanks(self, eval_set: str | None = None):
+    def getRanks(self, eval_set: str) -> pd.DataFrame:
+        """
+        Retrieves rank dataframe for specified eval_set.
+
+        Parameters:
+        -----------
+        eval_set: str
+            The name of the eval_set to retrieve ranks for.
+
+        Returns:
+        --------
+        pd.DataFrame:
+            The ranks dataframe for eval_set.
+        """
         if not self.ranks:
             raise RuntimeError(
                 "Simulator has no rankings to operate on: please call simulator.rank()"
             )
-        elif eval_set and eval_set not in self.ranks:
+        elif eval_set not in self.ranks:
             raise RuntimeError(
                 f"Simulator has no rankings for eval set {eval_set}: please call simulator.rank()"
             )
 
-        if eval_set:
-            return self.ranks[eval_set]
-
-        return self.ranks
+        return self.ranks[eval_set]
 
     def topK(self, k: int, eval_set: str) -> pd.DataFrame:
         """
         Returns the top K ranked strategies from the previous ranking.
+
+        Parameters:
+        -----------
+        k: int
+            The number of strategies to return.
+        eval_set:
+            For which eval_set to return the top K strategies for.
+
+        Returns:
+        --------
+        pd.DataFrame:
+            The top K ranking strategy configurations for the specified eval_set.
         """
         return self.getRanks(eval_set=eval_set).head(k).copy()
 
     @staticmethod
     def getStrategies(df: pd.DataFrame) -> dict:
         """
-        Returns strategy dictionary containing the strategy configurations for all configurations in df.
+        Generates strategy dictionary containing the strategy configurations for all configurations in df.
         This strategy dictionary is properly formatted and can be directly passed into run() or rank()
+
+        Parameters:
+        -----------
+        df: pd.DataFrame
+            A rank dataframe generated by the rank() function.
+
+        Returns:
+        --------
+        dict:
+            All strategy configurations contained within the dataframe.
         """
-        # df should already be sorted by rank
         df = df.copy()
-        df["params"] = df.apply(
-            lambda x: tuple([*zip(*x["params"].items())]), axis=1
-        )
+        df["params"] = df.apply(lambda x: tuple([*zip(*x["params"].items())]), axis=1)
         df["param_names"] = df.apply(lambda x: x["params"][0], axis=1)
         df["param_values"] = df.apply(lambda x: x["params"][1], axis=1)
         groups = df.groupby(by="strategy")
@@ -174,7 +310,15 @@ class StoppingSimulator:
 
         return strategies
 
-    def addCallback(self, callback: SimulationCallback):
+    def addCallback(self, callback: SimulationCallback) -> None:
+        """
+        Adds a SimulationCallback to this simulator object.
+
+        Parameters:
+        -----------
+        callback: SimulationCallback
+            The callback to add to this simulator object.
+        """
         if not isinstance(callback, SimulationCallback):
             raise ValueError(f"Callbacks must be of type {type(SimulationCallback)}!")
 
@@ -192,7 +336,10 @@ class StoppingSimulator:
                 func = getattr(callback, method)
                 func(**kwargs)
 
-    def clear(self):
+    def clear(self) -> None:
+        """
+        Clears all data, including any simulations run, curves loaded, or ranks generated.
+        """
         self.simulations = None
         self.tasks = []
         self.ranks = {}
@@ -282,7 +429,7 @@ class StoppingSimulator:
                                 model=model,
                                 metric=metric,
                                 eval_set=eval_set,
-                                strategy=strategy
+                                strategy=strategy,
                             )
 
                             results.append(
@@ -299,7 +446,7 @@ class StoppingSimulator:
                                 model=model,
                                 metric=metric,
                                 eval_set=eval_set,
-                                strategy=strategy
+                                strategy=strategy,
                             )
 
         self._runCallbacks("after_task")
@@ -339,19 +486,17 @@ class StoppingSimulator:
         ranks["rank"] = ranks.groupby(groups)["superscore"].rank()
 
         # use param dict str for grouping (dict is unhashable)
-        strategy_mapping = ranks.groupby("params")["strategy"].unique().to_dict()
-        ranks = ranks.groupby("params")["rank"].mean()
+        ranks["groups"] = ranks.apply(lambda x: (x["strategy"], x["params"]), axis=1)
+        ranks = ranks.groupby("groups")["rank"].mean()
         ranks = ranks.sort_values().reset_index()
 
         import json
 
-        ranks["strategy"] = ranks["params"].map(strategy_mapping).apply(lambda x: x[0])
-        ranks["params"] = (
-            ranks["params"]
-            .drop_duplicates()
-            .apply(lambda x: json.loads(x.replace("'", '"')))
+        ranks["strategy"] = ranks["groups"].apply(lambda x: x[0])
+        ranks["params"] = ranks["groups"].apply(
+            lambda x: json.loads(x[1].replace("'", '"'))
         )
-
+        ranks = ranks.drop("groups", axis=1)
         return ranks
 
     def _rank_by_error(self, df: pd.DataFrame):
@@ -421,24 +566,24 @@ class StoppingSimulator:
         Properly formats parameter values in strategies dictionary.
 
         Expected input format:
-
-        strategies = {
-            strategy_name: {
-                param: int | float,
-                param: list[int | float],
-                param: tuple[int, int, int], # (start, end, step), equivalent to python range
+            strategies = {
+                strategy_name: {
+                    param: int | float,
+                    param: list[int | float],
+                    param: tuple[int, int, int], # (start, end, step), equivalent to python range
+                    ...
+                },
                 ...
-            },
-            ...
-        }
+            }
 
         Returns:
         --------
         dict[str, tuple[list[str] | list[tuple[int | float]]]]:
             Ensures that each strategy now maps to a tuple: (parameter names, parameter configs)
             where parameter names is a list[str] of all parameter names for that strategy and
-            where parameter configs is a list[tuple[int | float]] where the value of each index corresponds to
-            the same indexed parameter in parameter names.
+            where parameter configs is a list[tuple[int | float]] where each tuple represents a
+            different configuration of that strategy. The value of each index within these tuples
+            corresponds to the same indexed parameter in parameter names.
         """
         # check for preformatted strategy dict (output of getStrategies())
         preformatted = True
@@ -512,6 +657,7 @@ class StoppingSimulator:
                 ]
 
             strategies[strategy] = (param_names, param_configs)
+            print(f"{strategy}: {len(param_configs)} parameter configurations")
 
         return strategies
 

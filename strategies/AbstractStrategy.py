@@ -62,7 +62,7 @@ class AbstractStrategy(ABC):
         Updates any valid strategy parameter with a new value.
         Note that a valid strategy parameter is any parameter
         listed in self.user_params().
-        
+
         Parameters:
         -----------
         **kwargs: keyword arguments where the key is the parameter name
@@ -73,11 +73,9 @@ class AbstractStrategy(ABC):
             if key in user_params:
                 setattr(self, key, value)
             else:
-                print(f"Warning: '{key}' is not a valid parameter for strategy={self.name}.")
-
-# TODO: refactor all _short_kwargs into kwargs()
-# TODO: ensure simple patience user_params uses patience instead of b
-
+                raise ValueError(
+                    f"'{key}' is not a valid parameter for strategy={self.name}."
+                )
 
     @property
     def name(self):
@@ -115,7 +113,7 @@ class AbstractStrategy(ABC):
         Returns:
         --------
         str:
-            A single line string listing a strategy and its configurations 
+            A single line string listing a strategy and its configurations
             with abbreviated strategy/parameter names and rounded values.
         """
         result = []

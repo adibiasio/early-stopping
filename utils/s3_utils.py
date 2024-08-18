@@ -3,12 +3,39 @@ from urllib.parse import urlparse
 
 
 def is_s3_url(path: str) -> bool:
+    """
+    Checks if path is a s3 uri.
+
+    Params:
+    -------
+    path: str
+        The path to check.
+
+    Returns:
+    --------
+    bool: whether the path is a s3 uri.
+    """
     if (path[:2] == "s3") and ("://" in path[:6]):
         return True
     return False
 
 
-def get_bucket_key(s3_uri: str) -> tuple[str, str]:
+def get_bucket_prefix(s3_uri: str) -> tuple[str, str]:
+    """
+    Retrieves the bucket and prefix from a s3 uri.
+
+    Params:
+    -------
+    origin_path: str
+        The path (s3 uri) to be parsed.
+
+    Returns:
+    --------
+    bucket_name: str
+        the associated bucket name
+    object_prefix: str
+        the associated prefix (key)
+    """
     if not is_s3_url(s3_uri):
         raise ValueError("Invalid S3 URI scheme. It should be 's3'.")
 
@@ -19,11 +46,26 @@ def get_bucket_key(s3_uri: str) -> tuple[str, str]:
     return bucket_name, object_key
 
 
-def download_folder(bucket: str, prefix: str, local_dir: str):
+def download_folder(path: str, local_dir: str) -> str:
+    """
+    Downloads s3 file from path to local_dir.
+
+    Parameters:
+    -----------
+    path: str
+        The path (s3 uri) to the original location of the object
+    local_dir: str
+        The local path to the intended destination location of the object
+
+    Returns:
+    --------
+    str: the local_dir path where the downloaded folder is located.
+    """
     import boto3
 
     s3 = boto3.client("s3")
     paginator = s3.get_paginator("list_objects_v2")
+    bucket, prefix = get_bucket_prefix(path)
 
     # List objects with the given prefix (s3_folder)
     for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
@@ -45,23 +87,4 @@ def download_folder(bucket: str, prefix: str, local_dir: str):
             print(f"Downloading {s3_key} to {local_file_path}")
             s3.download_file(bucket, s3_key, local_file_path)
 
-
-def list_bucket_s3(bucket, prefix: str = "", suffix: str = "") -> list[str]:
-    import boto3
-
-    filters = {}
-    if prefix:
-        filters["Prefix"] = prefix
-
-    if suffix is None:
-        suffix = ""
-
-    s3 = boto3.client("s3")
-    paginator = s3.get_paginator("list_objects_v2")
-
-    objects = []
-    for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
-        contents = page.get("Contents", [])
-        objects.extend([obj["Key"] for obj in contents if obj["Key"].endswith(suffix)])
-
-    return objects
+    return local_dir
