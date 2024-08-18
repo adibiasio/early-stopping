@@ -6,8 +6,7 @@ _*
 
 SimulatorRuns
 
-curves
-data
+curves/104
 
 # TODO: delete this folder and remove from gitignore
 out
