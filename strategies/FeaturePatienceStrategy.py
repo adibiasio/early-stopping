@@ -44,7 +44,7 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
 
         from strategies.SimplePatienceStrategy import SimplePatienceStrategy
 
-        base_class = self._base_class()
+        base_class = self.base_class()
         if base_class != SimplePatienceStrategy:
             self.b = self.min_patience
 
@@ -64,7 +64,7 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
                 self.min_patience,
             )
 
-            base_class = self._base_class()
+            base_class = self.base_class()
             if base_class == SimplePatienceStrategy:
                 self.b = rounds
             else:

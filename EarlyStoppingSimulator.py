@@ -2,6 +2,7 @@ import itertools
 import math
 import os
 import random
+import time
 from typing import Callable
 
 import numpy as np
@@ -12,8 +13,9 @@ from tqdm import tqdm
 from callbacks import SimulationCallback
 from strategies.AbstractStrategy import AbstractStrategy
 from strategies.StrategyFactory import StrategyFactory
-from utils.load import load_json
+from utils.logging import make_logger
 from utils.s3_utils import download_folder, is_s3_url
+from utils.utils import load_json, save_json
 
 
 class StoppingSimulator:
@@ -26,6 +28,7 @@ class StoppingSimulator:
         callbacks: list[SimulationCallback] = None,
         output_dir: str = output_dir_name,
         seed: int = 42,
+        verbosity: int = 3,
     ):
         self.factory = StrategyFactory()
         self.simulations = None
@@ -38,6 +41,10 @@ class StoppingSimulator:
             callbacks=callbacks,
             output_dir=output_dir,
             seed=seed,
+        )
+
+        self.logger = make_logger(
+            name="simulator", verbosity=verbosity, path=self.output_dir
         )
 
         # 600 configs
@@ -102,8 +109,14 @@ class StoppingSimulator:
             if not os.path.exists(save_path):
                 os.mkdir(save_path)
 
+            self.logger.info(
+                f"Downloading files from s3: {path} to local path: {save_path}"
+            )
+
             download_folder(path=path, local_dir=save_path)
             path = save_path
+
+            self.logger.info(f"Downloaded files successfully!")
 
         if not os.path.isdir(path):
             raise ValueError(f"The path '{path}' is not a valid directory.")
@@ -170,11 +183,22 @@ class StoppingSimulator:
 
         self.ranks = {}
         for eval_set in eval_sets:
+            start = time.time()
+            self.logger.debug(f"Ranking {eval_set} eval_set...")
             self.ranks[eval_set] = self._rank(eval_set=eval_set, by=by)
+
+            end = time.time()
+            self.logger.debug(
+                f"Finished Ranking {eval_set}, took {end - start} seconds"
+            )
+
+            eval_set_path = os.path.join(self.output_dir, f"{eval_set}-ranks.csv")
             self.ranks[eval_set].to_csv(
-                os.path.join(self.output_dir, f"{eval_set}-ranks.csv"),
+                eval_set_path,
                 index=False,
             )
+
+            self.logger.debug(f"Saved {eval_set} ranks to {eval_set_path}")
 
         return self.ranks
 
@@ -210,6 +234,8 @@ class StoppingSimulator:
         pd.DataFrame:
             The pandas dataframe containing all simulation results across the filtered learning curves.
         """
+        start = time.time()
+
         if strategies is None:
             strategies = self.default_strategies
         strategies = self._preprocess_strategies(strategies=strategies)
@@ -217,7 +243,11 @@ class StoppingSimulator:
         filters = dict(
             models=self._validate_and_preprocess_filter(filter=models),
             metrics=self._validate_and_preprocess_filter(filter=metrics),
-            eval_sets=eval_sets,
+            eval_sets=self._validate_and_preprocess_filter(filter=eval_sets),
+        )
+
+        self.logger.debug(
+            f"Running simulations with mode = {mode} and filters = {filters}"
         )
 
         kwargs = dict(
@@ -230,8 +260,15 @@ class StoppingSimulator:
         else:
             results = self._process_tasks_seq(**kwargs)
 
+        end = time.time()
+        self.logger.debug(f"Finished Running Simulations, took {end - start} seconds")
+        self.logger.debug(f"Saving simulations to csv...")
+
         self.simulations = pd.concat(results)
-        self.simulations.to_csv(os.path.join(self.output_dir, f"simulations.csv"))
+        simulations_path = os.path.join(self.output_dir, f"simulations.csv")
+        self.simulations.to_csv(simulations_path)
+
+        self.logger.debug(f"Saved simulations to {simulations_path}")
 
         return self.simulations
 
@@ -559,6 +596,7 @@ class StoppingSimulator:
 
         return filter
 
+    # TODO: consider making a search space class so we don't need to have all this logic in simulator
     def _preprocess_strategies(
         self, strategies: dict
     ) -> dict[str, tuple[list[str] | list[tuple[int | float]]]]:
@@ -585,83 +623,120 @@ class StoppingSimulator:
             different configuration of that strategy. The value of each index within these tuples
             corresponds to the same indexed parameter in parameter names.
         """
-        # check for preformatted strategy dict (output of getStrategies())
-        preformatted = True
-        for strategy, params in strategies.items():
+        # check for valid strategy input format
+        if not self._is_strategies_preformatted(strategies):
+            for strategy, params in strategies.items():
+                search_method = self.search_method
+                if "search_method" in params:
+                    search_method = params["search_method"]
+                    del params["search_method"]
+
+                for param, val in params.items():
+                    if isinstance(val, (float, int)):
+                        params[param] = [val]
+                    elif (
+                        type(val) == tuple
+                        and len(val) == 3
+                        and all(isinstance(num, (float, int)) for num in val)
+                    ):
+                        start, end, step = val
+                        params[param] = np.arange(start, end + step, step).tolist()
+                    elif type(val) == list and all(
+                        isinstance(num, (float, int)) for num in val
+                    ):
+                        # already properly formatted
+                        pass
+                    else:
+                        raise ValueError(
+                            f"Invalid parameter {param}={val} for strategy {strategy}"
+                        )
+
+                param_names = list(params.keys())
+                param_vals = list(params.values())
+
+                # Defining the parameter search space
+
+                # sklearn parameter sampler class:
+                # https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.ParameterSampler.html#sklearn.model_selection.ParameterSampler
+
+                # https://www.kaggle.com/code/willkoehrsen/intro-to-model-tuning-grid-and-random-search
+
+                # explore these techniques with ray.tune: https://docs.ray.io/en/latest/tune/key-concepts.html
+                # https://docs.ray.io/en/latest/tune/faq.html#which-search-algorithm-scheduler-should-i-choose
+                # https://docs.ray.io/en/latest/tune/faq.html#how-do-i-configure-search-spaces
+
+                if search_method == "grid":
+                    param_configs = list(itertools.product(*param_vals))
+                elif search_method == "random":
+                    random.seed(self.seed)
+
+                    # perform sqrt(num grid search configs) random samples
+                    num_configs = math.prod([len(arr) for arr in param_vals])
+                    num_samples = round(math.sqrt(num_configs))
+
+                    param_configs = [
+                        tuple(random.sample(v, k=1)[0] for v in param_vals)
+                        for i in range(num_samples)
+                    ]
+                else:
+                    raise ValueError(f"Invalid search method: {search_method}")
+
+                strategies[strategy] = (param_names, param_configs)
+                self.logger.info(
+                    f"{strategy}: {len(param_configs)} parameter configurations"
+                )
+
+        strategy_path = os.path.join(self.output_dir, "strategies.json")
+        save_json(strategy_path, strategies)
+
+        self.logger.debug(f"Saved strategy dictionary to {strategy_path}!")
+
+        return strategies
+
+    def _is_strategies_preformatted(self, strategies: dict) -> bool:
+        """
+        Checks if strategy dict is already preformatted (output of getStrategies())
+
+        Parameters:
+        -----------
+        strategies: dict
+            The strategies dictionary to be checked
+
+        Returns:
+        --------
+        Whether the strategies dict is formatted correctly.
+        """
+        for _, params in strategies.items():
             if not (isinstance(params, tuple) and len(params) == 2):
-                preformatted = False
-                break
+                return False
 
             names, values = params
             if not isinstance(names, tuple) or not isinstance(values, list):
-                preformatted = False
-                break
+                return False
 
             if not all(isinstance(name, str) for name in names) or not all(
                 isinstance(value, tuple) for value in values
             ):
-                preformatted = False
-                break
+                return False
 
-        if preformatted:
-            return strategies
-
-        # check for valid strategy input format
-        for strategy, params in strategies.items():
-            for param, val in params.items():
-                if isinstance(val, (float, int)):
-                    params[param] = [val]
-                elif (
-                    type(val) == tuple
-                    and len(val) == 3
-                    and all(isinstance(num, (float, int)) for num in val)
-                ):
-                    start, end, step = val
-                    params[param] = np.arange(start, end + step, step).tolist()
-                elif type(val) == list and all(
-                    isinstance(num, (float, int)) for num in val
-                ):
-                    # already properly formatted
-                    pass
-                else:
-                    raise ValueError(
-                        f"Invalid parameter {param}={val} for strategy {strategy}"
-                    )
-
-            param_names = list(params.keys())
-            param_vals = list(params.values())
-
-            # Defining the parameter search space
-
-            # sklearn parameter sampler class:
-            # https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.ParameterSampler.html#sklearn.model_selection.ParameterSampler
-
-            # https://www.kaggle.com/code/willkoehrsen/intro-to-model-tuning-grid-and-random-search
-
-            # explore these techniques with ray.tune: https://docs.ray.io/en/latest/tune/key-concepts.html
-            # https://docs.ray.io/en/latest/tune/faq.html#which-search-algorithm-scheduler-should-i-choose
-            # https://docs.ray.io/en/latest/tune/faq.html#how-do-i-configure-search-spaces
-
-            if self.search_method == "grid":
-                param_configs = list(itertools.product(*param_vals))
-            elif self.search_method == "random":
-                random.seed(self.seed)
-
-                # perform sqrt(num grid search configs) random samples
-                num_configs = math.prod([len(arr) for arr in param_vals])
-                num_samples = round(math.sqrt(num_configs))
-
-                param_configs = [
-                    tuple(random.sample(v, k=1)[0] for v in param_vals)
-                    for i in range(num_samples)
-                ]
-
-            strategies[strategy] = (param_names, param_configs)
-            print(f"{strategy}: {len(param_configs)} parameter configurations")
-
-        return strategies
+        return True
 
     def _get_dataset_fold(self, path: str) -> tuple[str, str]:
+        """
+        Extracts dataset name and fold number from learning curve path.
+
+        Parameters:
+        -----------
+        path: str
+            Path to a learning curve file.
+            Expected path format:
+                .../dataset/fold/learning_curves.json
+        
+        Returns:
+        --------
+        tuple[str, str]:
+            (dataset name, fold)
+        """
         parts = path.rstrip("/").split("/")
 
         if len(parts) < 3:

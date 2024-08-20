@@ -39,33 +39,35 @@ class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
 
         return func
 
-    def _base_class(self) -> AbstractPatienceStrategy:
+    def base_class(self) -> AbstractPatienceStrategy:
         from strategies.LinearAdaptivePatienceStrategy import (
             LinearAdaptivePatienceStrategy,
         )
         from strategies.SimplePatienceStrategy import SimplePatienceStrategy
 
+        if self.a == 0:
+            return SimplePatienceStrategy
+
         if self.degree == 1:
-            if self.a == 0:
-                return SimplePatienceStrategy
             return LinearAdaptivePatienceStrategy
+
         return self.__class__
 
     def _base_name(self) -> str:
-        return self._base_class()._name
+        return self.base_class()._name
 
     def __str__(self) -> str:
         """
         Returns:
         --------
         str:
-            A single line string listing a strategy and its configurations 
+            A single line string listing a strategy and its configurations
             with abbreviated strategy/parameter names and rounded values.
         """
         # TODO: make use of abstract strategy __str__ method
-        # code dupe, but not sure of a good way to reuse code here^
+        # this is code dupe, but not sure of a good way to reuse code here
         result = []
-        base_class = self._base_class()
+        base_class = self.base_class()
         for param, short in base_class.kwargs().items():
             val = self.b if param == "patience" else getattr(self, param)
             result.append(f"{short}={round(val,3)}")
@@ -74,12 +76,17 @@ class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
         result.insert(0, base_class._short_name)
         return ";".join(result)
 
+
+    # TODO: currently, if poly patience is actually simple patience
+    # kwargs still returns "a" and "degree", which it shouldn't
     @classmethod
     def kwargs(cls) -> dict[str, str]:
         kwargs = super().kwargs()
-        kwargs.update({
-            "a": "a",
-            "b": "b",
-            "degree": "n",
-        })
+        kwargs.update(
+            {
+                "a": "a",
+                "b": "b",
+                "degree": "n",
+            }
+        )
         return kwargs

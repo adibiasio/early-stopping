@@ -1,7 +1,8 @@
 from typing import Type
 
 from strategies.AbstractStrategy import AbstractStrategy
-from strategies.FeaturePatience import FeaturePatienceStrategy
+from strategies.AutoGluonStrategy import AutoGluonStrategy
+from strategies.FeaturePatienceStrategy import FeaturePatienceStrategy
 from strategies.FixedIterationStrategy import FixedIterationStrategy
 from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
 from strategies.MinDeltaStrategy import MinDeltaStrategy
@@ -22,7 +23,13 @@ class StrategyFactory:
         Patience is defined as the number of iterations the training process
         will continue for without any observed improvements in the model before
         stopping. The StrategyFactory supports constant patience values or
-        patience defined as a function of the current iteration. See below.
+        patience defined as a function of the current iteration.
+
+        All patience strategies support bounds for patience values, denoted by
+        (minp, maxp). So for the following functions p(x), the overall patience
+        functions are best respresented as the following. See below.
+
+            P(x) = min(maxp, max(minp, p(x)))
 
         Strategies:
             simple_patience: SimplePatienceStrategy
@@ -33,6 +40,18 @@ class StrategyFactory:
 
             polynomial_adaptive_patience: PolynomialAdaptivePatienceStrategy
                 p(x) = ax^n + b
+
+            feature_patience: FeaturePatienceStrategy
+                p(x) = ax^n + b_num_rounds_train
+
+            autogluon_patience: AutoGluonStrategy
+                Feature patience with hardcoded parameter values reflecting
+                AutoGluon's default strategy settings:
+                    a = 0.3
+                    b = 10
+                    n = 1
+                    minp = 20
+                    maxp = 300
 
         Each of the strategies listed above support variations with sliding window
         and minimum delta. Read more about these stopping strategies in the "Non-Patience
@@ -71,6 +90,7 @@ class StrategyFactory:
         "linear_adaptive_patience": LinearAdaptivePatienceStrategy,
         "polynomial_adaptive_patience": PolynomialAdaptivePatienceStrategy,
         "feature_patience": FeaturePatienceStrategy,
+        "autogluon_patience": AutoGluonStrategy,
         "fixed_iteration": FixedIterationStrategy,
         "min_delta": MinDeltaStrategy,
         "sliding_window": SlidingWindowStrategy,
