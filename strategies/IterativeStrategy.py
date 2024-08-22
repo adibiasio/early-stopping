@@ -54,6 +54,7 @@ class IterativeStrategy(AbstractStrategy):
         sliding_sum = 0
         iter_wo_improvement = 0
         patience = self.patience(1)
+        stop = False
 
         self.runCallbacks("before_simulation", strategy=self)
 
@@ -76,25 +77,15 @@ class IterativeStrategy(AbstractStrategy):
             if best_error is None:
                 best_error = error
 
-            elif error >= best_error + self.min_delta:
-                iter_wo_improvement += 1
-                if iter_wo_improvement >= patience:
-                    # after iteration callbacks
-                    self.runCallbacks(
-                        "after_iter",
-                        strategy=self,
-                        iter=iter,
-                        metric=error,
-                        iter_wo_improvement=iter_wo_improvement,
-                        patience=patience,
-                    )
-                    break
-
-            else:
+            elif error < best_error - self.min_delta:
                 best_iter = iter
                 best_error = error
                 iter_wo_improvement = 0
                 patience = self.patience(iter + 1)
+            else:
+                iter_wo_improvement += 1
+                if iter_wo_improvement >= patience:
+                    stop = True
 
             # after iteration callbacks
             self.runCallbacks(
@@ -105,6 +96,9 @@ class IterativeStrategy(AbstractStrategy):
                 iter_wo_improvement=iter_wo_improvement,
                 patience=patience,
             )
+
+            if stop:
+                break
 
         self.runCallbacks("after_simulation", strategy=self)
         return best_iter, iter
