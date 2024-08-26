@@ -1,4 +1,4 @@
-from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
+from .LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
 
 
 class SimplePatienceStrategy(LinearAdaptivePatienceStrategy):

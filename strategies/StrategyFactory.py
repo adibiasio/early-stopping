@@ -1,16 +1,19 @@
 from typing import Type
 
-from strategies.AbstractStrategy import AbstractStrategy
-from strategies.AutoGluonStrategy import AutoGluonStrategy
-from strategies.FeaturePatienceStrategy import FeaturePatienceStrategy
-from strategies.FixedIterationStrategy import FixedIterationStrategy
-from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
-from strategies.MinDeltaStrategy import MinDeltaStrategy
-from strategies.PolynomialAdaptivePatienceStrategy import (
+from .AbstractStrategy import AbstractStrategy
+from .AutoGluonStrategy import AutoGluonStrategy
+from .AutoGluonStrategyV2 import AutoGluonStrategyV2
+from .FeaturePatienceStrategy import FeaturePatienceStrategy
+from .FeaturePatienceStrategyV2 import FeaturePatienceStrategyV2
+from .FixedIterationStrategy import FixedIterationStrategy
+from .LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
+from .MinDeltaStrategy import MinDeltaStrategy
+from .PolynomialAdaptivePatienceStrategy import (
     PolynomialAdaptivePatienceStrategy,
 )
-from strategies.SimplePatienceStrategy import SimplePatienceStrategy
-from strategies.SlidingWindowStrategy import SlidingWindowStrategy
+from .SimplePatienceStrategy import SimplePatienceStrategy
+from .SimplePatienceStrategyV2 import SimplePatienceStrategyV2
+from .SlidingWindowStrategy import SlidingWindowStrategy
 
 
 class StrategyFactory:
@@ -87,10 +90,13 @@ class StrategyFactory:
 
     _strategy_class_map = {
         "simple_patience": SimplePatienceStrategy,
+        "simple_patience_v2": SimplePatienceStrategyV2,
         "linear_adaptive_patience": LinearAdaptivePatienceStrategy,
         "polynomial_adaptive_patience": PolynomialAdaptivePatienceStrategy,
         "feature_patience": FeaturePatienceStrategy,
+        "feature_patience_v2": FeaturePatienceStrategyV2,
         "autogluon_patience": AutoGluonStrategy,
+        "autogluon_patience_v2": AutoGluonStrategyV2,
         "fixed_iteration": FixedIterationStrategy,
         "min_delta": MinDeltaStrategy,
         "sliding_window": SlidingWindowStrategy,

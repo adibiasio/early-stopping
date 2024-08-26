@@ -1,4 +1,4 @@
-from strategies.IterativeStrategy import IterativeStrategy
+from .IterativeStrategy import IterativeStrategy
 
 
 class MinDeltaStrategy(IterativeStrategy):

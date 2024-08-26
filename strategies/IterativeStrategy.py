@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Callable
 
-from strategies.AbstractStrategy import AbstractStrategy
+from .AbstractStrategy import AbstractStrategy
 
 
 class IterativeStrategy(AbstractStrategy):
@@ -141,30 +141,6 @@ class IterativeStrategy(AbstractStrategy):
                     break
 
     @property
-    def name(self):
-        base = self._base_name()
-
-        sliding = self.sliding_window != 1
-        min_delta = self.min_delta != 0
-
-        if base == "min_delta":
-            min_delta = False
-        elif base == "sliding_window":
-            sliding = False
-
-        if sliding:
-            base = "sliding_window_" + base
-
-        if min_delta:
-            base += "_with_min_delta"
-
-        return base
-
-    @abstractmethod
-    def _base_name(self):
-        pass
-
-    @property
     def patience(self) -> Callable[[int], int]:
         return lambda x: 0
 
@@ -173,7 +149,7 @@ class IterativeStrategy(AbstractStrategy):
         kwargs = super().kwargs()
         kwargs.update(
             {
-                "n_iter": "i",
+                "n_iter": "n_iter",
                 "sliding_window": "sw",
                 "min_delta": "md",
             }

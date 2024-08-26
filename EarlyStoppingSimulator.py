@@ -419,6 +419,8 @@ class StoppingSimulator:
 
         self._runCallbacks(
             "before_task",
+            dataset=dataset,
+            fold=fold,
             curve_data=model_data,
             strategies=strategies,
             filters=filters,
@@ -447,19 +449,18 @@ class StoppingSimulator:
                     stopping_curve = curves[i][val_index]  # always stop based on val
                     eval_curve = curves[i][j]
 
-                    for strategy, (param_names, param_configs) in strategies.items():
+                    for strategy_name, (param_names, param_configs) in strategies.items():
                         kwargs = {}
                         if self.factory.get_strategy_class(
-                            strategy
+                            strategy_name
                         ).needs_curve_metadata:
                             kwargs["metadata"] = meta_data
-                        strategy = self.factory.make_strategy(strategy, **kwargs)
 
                         for config in param_configs:
                             params = {
                                 name: param for name, param in zip(param_names, config)
                             }
-                            strategy.update_params(**params)
+                            strategy = self.factory.make_strategy(strategy_name, **params, **kwargs)
 
                             self._runCallbacks(
                                 "before_strategy",
@@ -486,7 +487,11 @@ class StoppingSimulator:
                                 strategy=strategy,
                             )
 
-        self._runCallbacks("after_task")
+        self._runCallbacks(
+            "after_task",
+            dataset=dataset,
+            fold=fold,
+        )
 
         columns = [
             "dataset",

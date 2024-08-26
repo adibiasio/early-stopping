@@ -1,6 +1,6 @@
 from typing import Callable
 
-from strategies.PolynomialAdaptivePatienceStrategy import (
+from .PolynomialAdaptivePatienceStrategy import (
     PolynomialAdaptivePatienceStrategy,
 )
 
