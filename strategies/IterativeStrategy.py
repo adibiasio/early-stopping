@@ -93,7 +93,6 @@ class IterativeStrategy(AbstractStrategy):
 
             if best_error is None:
                 best_error = error
-
             elif error < best_error - self.min_delta:
                 best_iter = iter
                 best_error = error
