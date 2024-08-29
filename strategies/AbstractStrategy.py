@@ -6,6 +6,7 @@ class AbstractStrategy(ABC):
     _short_name = ""
 
     needs_curve_metadata = False
+    needs_time_per_iter = False
 
     simulate_columns = [
         "total_iter",
