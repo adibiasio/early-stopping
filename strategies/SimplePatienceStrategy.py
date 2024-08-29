@@ -1,7 +1,7 @@
-from .IterativeStrategy import IterativeStrategy
+from .LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
 
 
-class SimplePatienceStrategy(IterativeStrategy):
+class SimplePatienceStrategy(LinearAdaptivePatienceStrategy):
     """
     Patience Equation: p(x) = p
     """
@@ -10,23 +10,10 @@ class SimplePatienceStrategy(IterativeStrategy):
     _short_name = "SP"
 
     def __init__(self, b: int = 0, **kwargs):
-        super().__init__(**kwargs)
-        self.b = b
-
-    @property
-    def patience(self):
-        """
-        Redefined here because cannot change property
-        setter without also redefining property in same class.
-        """
-        return lambda x: self.b
+        super().__init__(b=b, **kwargs)
 
     @classmethod
     def kwargs(cls) -> dict[str, str]:
         kwargs = super().kwargs()
-        kwargs.update(
-            {
-                "b": "b",
-            }
-        )
+        kwargs.pop("a", None)
         return kwargs

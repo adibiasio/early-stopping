@@ -39,9 +39,6 @@ class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
 
         return func
 
-    def _base_name(self) -> str:
-        return self._name
-
     @classmethod
     def kwargs(cls) -> dict[str, str]:
         kwargs = super().kwargs()

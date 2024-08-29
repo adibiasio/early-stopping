@@ -19,6 +19,7 @@ from utils.utils import load_json, save_json
 
 
 class StoppingSimulator:
+    callback_dir_name = "callbacks"
     data_dir_name = "data"
     output_dir_name = "SimulatorRuns"
 
@@ -360,7 +361,9 @@ class StoppingSimulator:
             raise ValueError(f"Callbacks must be of type {type(SimulationCallback)}!")
 
         if callback.has_save_artifacts:
-            callback.path = self.output_dir
+            callback.path = os.path.join(self.output_dir, self.callback_dir_name)
+            if not os.path.exists(callback.path):
+                os.mkdir(callback.path)
 
         if not self.callbacks:
             self.callbacks = []
@@ -441,11 +444,6 @@ class StoppingSimulator:
                 for j, eval_set in enumerate(eval_sets):
                     if filters["eval_sets"] and eval_set not in filters["eval_sets"]:
                         continue
-
-                    if val_index == -1:
-                        raise ValueError(
-                            "Validation Set not Included in Learning Curves!"
-                        )
 
                     stopping_curve = curves[i][val_index]  # always stop based on val
                     eval_curve = curves[i][j]
@@ -654,7 +652,7 @@ class StoppingSimulator:
                     ):
                         start, end, step = val
                         params[param] = np.arange(start, end + step, step).tolist()
-                    elif type(val) == list and all(
+                    elif isinstance(val, list) and all(
                         isinstance(num, (float, int)) for num in val
                     ):
                         # already properly formatted
