@@ -7,7 +7,7 @@ import seaborn as sns
 from matplotlib import pyplot as plt
 from scipy.interpolate import griddata
 
-from EarlyStoppingSimulator import StoppingSimulator
+from .EarlyStoppingSimulator import StoppingSimulator
 
 
 class Visualizations:

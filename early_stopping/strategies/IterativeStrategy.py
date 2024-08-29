@@ -160,7 +160,7 @@ class IterativeStrategy(AbstractStrategy):
         return best_iter, iter
 
     def addCallback(self, new_callback):
-        from callbacks import IterativeStrategyCallback # TODO: switch to relative import via module py package syntax etc.
+        from early_stopping.callbacks import IterativeStrategyCallback # TODO: switch to relative import via module py package syntax etc.
 
         if not isinstance(new_callback, IterativeStrategyCallback):
             raise ValueError(f"Invalid callback={new_callback}")

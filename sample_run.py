@@ -1,9 +1,9 @@
-from callbacks import (
+from early_stopping.callbacks import (
     GraphSimulationCallback,
     LearningCurveStrategyCallback,
     PatienceStrategyCallback,
 )
-from EarlyStoppingSimulator import StoppingSimulator
+from early_stopping.EarlyStoppingSimulator import StoppingSimulator
 
 ##### Step 1: Define callbacks #####
 

@@ -10,12 +10,12 @@ import pandas as pd
 import ray
 from tqdm import tqdm
 
-from callbacks import SimulationCallback
-from strategies.AbstractStrategy import AbstractStrategy
-from strategies.StrategyFactory import StrategyFactory
-from utils.logging import make_logger
-from utils.s3_utils import download_folder, is_s3_url
-from utils.utils import load_json, save_json
+from .callbacks import SimulationCallback
+from .strategies.AbstractStrategy import AbstractStrategy
+from .strategies.StrategyFactory import StrategyFactory
+from .utils.logging import make_logger
+from .utils.s3_utils import download_folder, is_s3_url
+from .utils.utils import load_json, save_json
 
 
 class StoppingSimulator:

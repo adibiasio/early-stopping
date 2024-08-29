@@ -1,7 +1,7 @@
 from abc import ABC
 
-from strategies.AbstractStrategy import AbstractStrategy
-from strategies.IterativeStrategy import IterativeStrategy
+from .strategies.AbstractStrategy import AbstractStrategy
+from .strategies.IterativeStrategy import IterativeStrategy
 
 ###########################################################
 ###################### Base Classes #######################

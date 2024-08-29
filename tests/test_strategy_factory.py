@@ -1,14 +1,14 @@
 import pytest
 
-from strategies.FixedIterationStrategy import FixedIterationStrategy
-from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
-from strategies.MinDeltaStrategy import MinDeltaStrategy
-from strategies.PolynomialAdaptivePatienceStrategy import (
+from early_stopping.strategies.FixedIterationStrategy import FixedIterationStrategy
+from early_stopping.strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
+from early_stopping.strategies.MinDeltaStrategy import MinDeltaStrategy
+from early_stopping.strategies.PolynomialAdaptivePatienceStrategy import (
     PolynomialAdaptivePatienceStrategy,
 )
-from strategies.SimplePatienceStrategy import SimplePatienceStrategy
-from strategies.SlidingWindowStrategy import SlidingWindowStrategy
-from strategies.StrategyFactory import StrategyFactory
+from early_stopping.strategies.SimplePatienceStrategy import SimplePatienceStrategy
+from early_stopping.strategies.SlidingWindowStrategy import SlidingWindowStrategy
+from early_stopping.strategies.StrategyFactory import StrategyFactory
 
 
 def strategy_classes():

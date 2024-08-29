@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 
-from strategies.SimplePatienceStrategy import SimplePatienceStrategy
-from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
+from early_stopping.strategies.SimplePatienceStrategy import SimplePatienceStrategy
+from early_stopping.strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
 
 
 def c(n):
