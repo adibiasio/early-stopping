@@ -9,14 +9,19 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 import ray
+from autogluon.common.loaders import load_json
+from autogluon.common.savers import save_json
+from autogluon.common.utils.s3_utils import (
+    download_s3_folder,
+    is_s3_url,
+    s3_path_to_bucket_prefix,
+)
 from tqdm import tqdm
 
 from .callbacks import SimulationCallback
 from .strategies.abstract_strategy import AbstractStrategy
 from .strategies.strategy_factory import StrategyFactory
 from .utils.logging import make_logger
-from .utils.s3_utils import download_folder, is_s3_url
-from .utils.utils import load_json, save_json
 
 
 class StoppingSimulator:
@@ -115,7 +120,8 @@ class StoppingSimulator:
                 f"Downloading files from s3: {path} to local path: {save_path}"
             )
 
-            download_folder(path=path, local_dir=save_path)
+            bucket, prefix = s3_path_to_bucket_prefix(path)
+            download_s3_folder(bucket=bucket, prefix=prefix, local_path=save_path, error_if_exists=False)
             path = save_path
 
             self.logger.info(f"Downloaded files successfully!")
@@ -410,7 +416,7 @@ class StoppingSimulator:
         strategies: dict,
         filters: dict,
     ) -> pd.DataFrame:
-        meta_data, model_data = load_json(task)
+        meta_data, model_data = load_json.load(task)
         dataset, fold = self._get_dataset_fold(task)
         task_info = [dataset, fold, meta_data["problem_type"]]
 
@@ -694,7 +700,7 @@ class StoppingSimulator:
                 )
 
         strategy_path = os.path.join(self.output_dir, "strategies.json")
-        save_json(strategy_path, strategies)
+        save_json.save(strategy_path, strategies)
 
         self.logger.debug(f"Saved strategy dictionary to {strategy_path}!")
 
