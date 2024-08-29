@@ -60,10 +60,21 @@ class SimulationCallback(ABC):
         self.strategy_callback = strategy_callback
         self.path = path
 
-    def before_task(self, curve_data: dict, strategies: dict, filters: dict):
+    def before_task(
+        self,
+        dataset: str,
+        fold: int,
+        curve_data: dict,
+        strategies: dict,
+        filters: dict,
+    ):
         """Run before a task is processed."""
 
-    def after_task(self):
+    def after_task(
+        self,
+        dataset: str,
+        fold: int,
+    ):
         """Run after a task is processed."""
 
     def before_strategy(
@@ -170,7 +181,14 @@ class GraphSimulationCallback(SimulationCallback):
         self.legend = None
         self.results = None
 
-    def before_task(self, curve_data: dict, strategies: dict, filters: dict):
+    def before_task(
+            self,
+            dataset: str,
+            fold: int,
+            curve_data: dict,
+            strategies: dict,
+            filters: dict,
+    ):
         import math
 
         import numpy as np
@@ -216,7 +234,7 @@ class GraphSimulationCallback(SimulationCallback):
         for item in array:
             yield item
 
-    def after_task(self):  # dataset: str, fold: str
+    def after_task(self, dataset: str, fold: int):
         """
         Create a figure with subplots based on a list of Axes objects.
         """
@@ -224,13 +242,10 @@ class GraphSimulationCallback(SimulationCallback):
         self.figure.legend(*self.legend)
         self.figure.tight_layout(pad=2.0)
 
-        # TODO: this keeps writing over previous task's saved image
-        # figure out best way to handle this, since do we want a lot of images for each task?
-        # or is it more helpful to have one image across all strategies for easy comparison
-
         import os
 
         file_name = self.strategy_callback.file_name
+        file_name = f"{file_name}_{dataset}_{fold}"
         # change path to self.path, filename.split(".")[0], filename-dataset-fold)?
         self.figure.savefig(os.path.join(self.path, file_name))
 

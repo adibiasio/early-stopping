@@ -27,8 +27,11 @@ class AbstractStrategy(ABC):
         chosen_iter, total_iter = self._run(stopping_curve)
         opt_iter = eval_curve.index(min(eval_curve))
         error_diff = eval_curve[chosen_iter] - eval_curve[opt_iter]
-        max_eval = max(eval_curve)
-        percent_error_diff = error_diff / (max_eval if max_eval != 0 else 1)
+        assert error_diff >= 0
+        if eval_curve[opt_iter] == eval_curve[chosen_iter]:
+            percent_error_diff = 0
+        else:
+            percent_error_diff = 1 - (eval_curve[opt_iter] / (eval_curve[chosen_iter] if eval_curve[chosen_iter] != 0 else 1))
         percent_iter_diff = (total_iter - opt_iter) / (opt_iter if opt_iter != 0 else 1)
         return [
             total_iter + 1,

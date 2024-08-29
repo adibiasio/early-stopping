@@ -1,4 +1,4 @@
-from strategies.FeaturePatienceStrategy import FeaturePatienceStrategy
+from .FeaturePatienceStrategy import FeaturePatienceStrategy
 
 
 class AutoGluonStrategy(FeaturePatienceStrategy):
@@ -7,7 +7,7 @@ class AutoGluonStrategy(FeaturePatienceStrategy):
     """
 
     _name = "autogluon_patience"
-    _short_name = "AG"
+    _short_name = "AGold"
 
     # default parameter settings within autogluon
     defaults = {

@@ -1,19 +1,25 @@
+from __future__ import annotations
+
 from abc import abstractmethod
 from typing import Callable
 
-from strategies.AbstractStrategy import AbstractStrategy
+from .AbstractStrategy import AbstractStrategy
 
 
 class IterativeStrategy(AbstractStrategy):
     def __init__(
         self,
+        n_iter: int = 0,
         sliding_window: int = 1,
         min_delta: float | int = 0,
-        callbacks: list = [],
+        callbacks: list | None = None,
     ):
         """
         Parameters:
         --------------
+        n_iter
+            maximum number of iterations to train for. Unlimited if 0.
+
         sliding_window
             window size for averaging last n errors
 
@@ -23,12 +29,21 @@ class IterativeStrategy(AbstractStrategy):
         """
         super().__init__()
 
-        if sliding_window and not isinstance(sliding_window, int):
-            raise ValueError("Sliding window parameter must be an integer.")
+        if callbacks is None:
+            callbacks = []
 
-        if min_delta and not isinstance(min_delta, (int, float)):
-            raise ValueError("Minimum Delta parameter must be an integer or float.")
+        if not isinstance(n_iter, int):
+            raise ValueError("n_iter parameter must be an integer.")
+        elif n_iter < 0:
+            raise ValueError(f"n_iter must be >= 0, value: {n_iter}")
 
+        if not isinstance(sliding_window, int):
+            raise ValueError("sliding_window parameter must be an integer.")
+
+        if not isinstance(min_delta, (int, float)):
+            raise ValueError("min_delta parameter must be an integer or float.")
+
+        self.n_iter = n_iter
         self.sliding_window = sliding_window
         self.min_delta = min_delta
 
@@ -59,6 +74,8 @@ class IterativeStrategy(AbstractStrategy):
         self.runCallbacks("before_simulation", strategy=self)
 
         for iter, error in enumerate(curve):
+            if self.n_iter != 0 and iter >= self.n_iter:
+                break
             self.runCallbacks(
                 "before_iter",
                 strategy=self,
@@ -76,7 +93,6 @@ class IterativeStrategy(AbstractStrategy):
 
             if best_error is None:
                 best_error = error
-
             elif error < best_error - self.min_delta:
                 best_iter = iter
                 best_error = error
@@ -124,30 +140,6 @@ class IterativeStrategy(AbstractStrategy):
                     break
 
     @property
-    def name(self):
-        base = self._base_name()
-
-        sliding = self.sliding_window != 1
-        min_delta = self.min_delta != 0
-
-        if base == "min_delta":
-            min_delta = False
-        elif base == "sliding_window":
-            sliding = False
-
-        if sliding:
-            base = "sliding_window_" + base
-
-        if min_delta:
-            base += "_with_min_delta"
-
-        return base
-
-    @abstractmethod
-    def _base_name(self):
-        pass
-
-    @property
     def patience(self) -> Callable[[int], int]:
         return lambda x: 0
 
@@ -156,6 +148,7 @@ class IterativeStrategy(AbstractStrategy):
         kwargs = super().kwargs()
         kwargs.update(
             {
+                "n_iter": "n_iter",
                 "sliding_window": "sw",
                 "min_delta": "md",
             }

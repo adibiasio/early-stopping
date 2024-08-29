@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Callable
 
-from strategies.IterativeStrategy import IterativeStrategy
+from .IterativeStrategy import IterativeStrategy
 
 
 class AbstractPatienceStrategy(IterativeStrategy):
@@ -32,7 +32,7 @@ class AbstractPatienceStrategy(IterativeStrategy):
         return func
 
     @abstractmethod
-    def _patience_fn() -> Callable[[int], int]:
+    def _patience_fn(self) -> Callable[[int], int]:
         pass
 
     @classmethod
