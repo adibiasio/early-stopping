@@ -1,4 +1,4 @@
-from typing import Callable
+from __future__ import annotations
 
 from .PolynomialAdaptivePatienceStrategy import (
     PolynomialAdaptivePatienceStrategy,
@@ -10,14 +10,16 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
     Patience equation is influenced by features of the dataset currently being "trained" on.
     """
 
-    _name = "feature_patience"
-    _short_name = "FP"
+    _name = "feature_patience_v2"
+    _short_name = "FPv2"
 
     needs_curve_metadata = True
 
     def __init__(
         self,
         metadata: dict,
+        max_offset: int = 300,
+        min_offset: int | None = None,
         min_rows: int = 10000,
         **kwargs,
     ):
@@ -39,48 +41,25 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
                 f"Invalid parameter min_rows={min_rows} for strategy {self.name}"
             )
 
+        self.max_offset = max_offset
         self.num_rows_train = num_rows_train
         self.min_rows = min_rows
 
-        from strategies.SimplePatienceStrategy import SimplePatienceStrategy
+        if min_offset is not None:
+            self.min_offset = min_offset
+        else:
+            self.min_offset = self.b
 
-        base_class = self.base_class()
-        if base_class != SimplePatienceStrategy:
-            self.b = self.min_patience
+        modifier = (
+            1
+            if self.num_rows_train <= self.min_rows
+            else self.min_rows / self.num_rows_train
+        )
+        self.min_patience = max(
+            round(modifier * self.max_offset),
+            self.min_offset,
+        )
 
-    def _patience_fn(self) -> Callable[[int], int]:
-        from strategies.SimplePatienceStrategy import SimplePatienceStrategy
-
-        base_fn = super()._patience_fn()
-
-        def func(iter):
-            modifier = (
-                1
-                if self.num_rows_train <= self.min_rows
-                else self.min_rows / self.num_rows_train
-            )
-            rounds = max(
-                round(modifier * self.max_patience),
-                self.min_patience,
-            )
-
-            base_class = self.base_class()
-            if base_class == SimplePatienceStrategy:
-                self.b = rounds
-            else:
-                self.min_patience = rounds
-
-            return base_fn(iter)
-
-        return func
-
-    def _base_name(self) -> str:
-        return self._name
-
-    # TODO: figure out how to handle num_rows_train
-    # because you don't set it directly currently
-    # (you pass in metadata object and use that to
-    # set num_rows_train)
     @classmethod
     def kwargs(cls) -> dict[str, str]:
         kwargs = super().kwargs()
@@ -88,6 +67,8 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
             {
                 "num_rows_train": "rt",
                 "min_rows": "mr",
+                "max_offset": "max_o",
+                "min_offset": "min_o",
             }
         )
         return kwargs

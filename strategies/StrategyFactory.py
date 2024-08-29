@@ -2,9 +2,7 @@ from typing import Type
 
 from .AbstractStrategy import AbstractStrategy
 from .AutoGluonStrategy import AutoGluonStrategy
-from .AutoGluonStrategyV2 import AutoGluonStrategyV2
 from .FeaturePatienceStrategy import FeaturePatienceStrategy
-from .FeaturePatienceStrategyV2 import FeaturePatienceStrategyV2
 from .FixedIterationStrategy import FixedIterationStrategy
 from .LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
 from .MinDeltaStrategy import MinDeltaStrategy
@@ -12,7 +10,6 @@ from .PolynomialAdaptivePatienceStrategy import (
     PolynomialAdaptivePatienceStrategy,
 )
 from .SimplePatienceStrategy import SimplePatienceStrategy
-from .SimplePatienceStrategyV2 import SimplePatienceStrategyV2
 from .SlidingWindowStrategy import SlidingWindowStrategy
 
 
@@ -90,13 +87,10 @@ class StrategyFactory:
 
     _strategy_class_map = {
         "simple_patience": SimplePatienceStrategy,
-        "simple_patience_v2": SimplePatienceStrategyV2,
         "linear_adaptive_patience": LinearAdaptivePatienceStrategy,
         "polynomial_adaptive_patience": PolynomialAdaptivePatienceStrategy,
         "feature_patience": FeaturePatienceStrategy,
-        "feature_patience_v2": FeaturePatienceStrategyV2,
         "autogluon_patience": AutoGluonStrategy,
-        "autogluon_patience_v2": AutoGluonStrategyV2,
         "fixed_iteration": FixedIterationStrategy,
         "min_delta": MinDeltaStrategy,
         "sliding_window": SlidingWindowStrategy,
