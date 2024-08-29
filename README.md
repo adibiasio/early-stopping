@@ -1,4 +1,4 @@
-# Early Stopping Simulation <span style="float:right;"> [![Python Versions](https://img.shields.io/badge/python-3.10-blue)](https://pypi.org/project/autogluon/) </span>
+# Early Stopping Simulation [![Python Versions](https://img.shields.io/badge/python-3.10-blue)]()
 
 This project is dedicated towards identifying efficient early stopping strategies in iterative learners.
 
