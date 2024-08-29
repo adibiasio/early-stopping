@@ -1,9 +1,9 @@
+from early_stopping.simulator import StoppingSimulator
 from early_stopping.callbacks import (
     GraphSimulationCallback,
     LearningCurveStrategyCallback,
     PatienceStrategyCallback,
 )
-from early_stopping.simulator import StoppingSimulator
 
 ##### Step 1: Define callbacks #####
 
@@ -27,7 +27,7 @@ simulator = StoppingSimulator(
 ##### Step 3: Load your learning curves #####
 
 # point to local directory
-path = "curves/3" # limit to /adult/0 for much faster toy runs
+path = "curves/3/" # limit to /adult/0 for much faster toy runs
 
 # point to s3 bucket
 # path = "s3://andrew-bench-dev/aggregated/tabular/ag_bench_learning_curves_full_20240815T102317/learning_curves/"
@@ -48,7 +48,6 @@ simulator.load_curves(path, save_path=save_path)
 # sample parameter value ranges
 a = {"a": (0, 0.5, 0.05)}
 b = {"b": (0, 50, 5)}
-p = {"patience": (0, 50, 5)}
 d = {"degree": (0.05, 1.3, 0.05)}
 sw = {"sliding_window": (1, 7, 1)}
 md = {"min_delta": (0, 0.01, 0.001)}
@@ -63,8 +62,8 @@ simulator.rank(
     # metrics=["accuracy"],
     # models=["LightGBM"],
     strategies={
-        "autogluon_patience": {"search_method": "grid", "simple": [0, 1]},
-        "simple_patience": p,
+        "autogluon_patience": {},
+        "simple_patience": b,
         "linear_patience": a | b,
         "polynomial_patience": a | b | d,  # | maxp | minp
         "feature_patience": a | b | d,  # | maxp | minp
