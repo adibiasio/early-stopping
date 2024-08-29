@@ -1,5 +1,6 @@
 aiosignal
 attrs
+autogluon.common
 boto3
 botocore
 certifi
@@ -25,6 +26,7 @@ pandas
 pillow
 pluggy
 protobuf
+psutil
 pyparsing
 pytest
 python-dateutil
