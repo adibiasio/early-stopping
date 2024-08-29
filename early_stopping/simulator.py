@@ -1,4 +1,5 @@
 import itertools
+import json
 import math
 import os
 import random
@@ -11,8 +12,8 @@ import ray
 from tqdm import tqdm
 
 from .callbacks import SimulationCallback
-from .strategies.AbstractStrategy import AbstractStrategy
-from .strategies.StrategyFactory import StrategyFactory
+from .strategies.abstract_strategy import AbstractStrategy
+from .strategies.strategy_factory import StrategyFactory
 from .utils.logging import make_logger
 from .utils.s3_utils import download_folder, is_s3_url
 from .utils.utils import load_json, save_json
@@ -51,7 +52,7 @@ class StoppingSimulator:
         # 600 configs
         self.default_strategies = {
             "simple_patience": {"patience": (1, 50, 1)},
-            "linear_adaptive_patience": {"a": (0.01, 0.51, 0.05), "b": (1, 50, 1)},
+            "linear_patience": {"a": (0.01, 0.51, 0.05), "b": (1, 50, 1)},
         }
 
     def load_curves(
@@ -538,8 +539,6 @@ class StoppingSimulator:
         ranks = ranks.groupby("groups")["rank"].mean()
         ranks = ranks.sort_values().reset_index()
 
-        import json
-
         ranks["strategy"] = ranks["groups"].apply(lambda x: x[0])
         ranks["params"] = ranks["groups"].apply(
             lambda x: json.loads(x[1].replace("'", '"'))
@@ -570,9 +569,6 @@ class StoppingSimulator:
             )
 
         self.search_method = search_method
-
-        # output_dir
-        import time
 
         if not isinstance(output_dir, str):
             raise ValueError(f"Output directory: {output_dir} must be a string!")

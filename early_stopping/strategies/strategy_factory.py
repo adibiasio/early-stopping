@@ -1,16 +1,14 @@
 from typing import Type
 
-from .AbstractStrategy import AbstractStrategy
-from .AutoGluonStrategy import AutoGluonStrategy
-from .FeaturePatienceStrategy import FeaturePatienceStrategy
-from .FixedIterationStrategy import FixedIterationStrategy
-from .LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
-from .MinDeltaStrategy import MinDeltaStrategy
-from .PolynomialAdaptivePatienceStrategy import (
-    PolynomialAdaptivePatienceStrategy,
-)
-from .SimplePatienceStrategy import SimplePatienceStrategy
-from .SlidingWindowStrategy import SlidingWindowStrategy
+from .abstract_strategy import AbstractStrategy
+from .autogluon_patience import AutoGluonStrategy
+from .feature_patience import FeaturePatienceStrategy
+from .fixed_iterations import FixedIterationStrategy
+from .linear_patience import LinearPatienceStrategy
+from .min_delta import MinDeltaStrategy
+from .polynomial_patience import PolynomialPatienceStrategy
+from .simple_patience import SimplePatienceStrategy
+from .sliding_window import SlidingWindowStrategy
 
 
 class StrategyFactory:
@@ -35,10 +33,10 @@ class StrategyFactory:
             simple_patience: SimplePatienceStrategy
                 p(x) = p
 
-            linear_adaptive_patience: LinearAdaptivePatienceStrategy
+            linear_patience: LinearPatienceStrategy
                 p(x) = ax + b
 
-            polynomial_adaptive_patience: PolynomialAdaptivePatienceStrategy
+            polynomial_patience: PolynomialPatienceStrategy
                 p(x) = ax^n + b
 
             feature_patience: FeaturePatienceStrategy
@@ -81,8 +79,8 @@ class StrategyFactory:
 
     _strategy_class_map = {
         "simple_patience": SimplePatienceStrategy,
-        "linear_adaptive_patience": LinearAdaptivePatienceStrategy,
-        "polynomial_adaptive_patience": PolynomialAdaptivePatienceStrategy,
+        "linear_patience": LinearPatienceStrategy,
+        "polynomial_patience": PolynomialPatienceStrategy,
         "feature_patience": FeaturePatienceStrategy,
         "autogluon_patience": AutoGluonStrategy,
         "fixed_iteration": FixedIterationStrategy,

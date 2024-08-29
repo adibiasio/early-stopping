@@ -1,7 +1,12 @@
+import os
 from abc import ABC
 
-from .strategies.AbstractStrategy import AbstractStrategy
-from .strategies.IterativeStrategy import IterativeStrategy
+import numpy as np
+import seaborn as sns
+from matplotlib import pyplot as plt
+
+from .strategies.abstract_strategy import AbstractStrategy
+from .strategies.iterative_strategy import IterativeStrategy
 
 ###########################################################
 ###################### Base Classes #######################
@@ -189,9 +194,6 @@ class GraphSimulationCallback(SimulationCallback):
             strategies: dict,
             filters: dict,
     ):
-        import numpy as np
-        from matplotlib import pyplot as plt
-
         total_curves = 0
         for model, data in curve_data.items():
             if filters["models"] and model not in filters["models"]:
@@ -240,8 +242,6 @@ class GraphSimulationCallback(SimulationCallback):
         self.figure.legend(*self.legend)
         self.figure.tight_layout(pad=2.0)
 
-        import os
-
         file_name = self.strategy_callback.file_name
         file_name = f"{file_name}_{dataset}_{fold}"
         # change path to self.path, filename.split(".")[0], filename-dataset-fold)?
@@ -276,8 +276,6 @@ class GraphSimulationCallback(SimulationCallback):
         x_label = x
         x = kwargs[x_label]
         del kwargs[x_label]
-
-        import seaborn as sns
 
         for label, line in kwargs.items():
             sns.lineplot(x=x, y=line, ax=ax, label=label)

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from .AbstractStrategy import AbstractStrategy
+from .abstract_strategy import AbstractStrategy
 
 
 class IterativeStrategy(AbstractStrategy):
@@ -160,7 +160,7 @@ class IterativeStrategy(AbstractStrategy):
         return best_iter, iter
 
     def addCallback(self, new_callback):
-        from early_stopping.callbacks import IterativeStrategyCallback # TODO: switch to relative import via module py package syntax etc.
+        from ..callbacks import IterativeStrategyCallback
 
         if not isinstance(new_callback, IterativeStrategyCallback):
             raise ValueError(f"Invalid callback={new_callback}")

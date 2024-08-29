@@ -6,8 +6,8 @@ run without errors (note this does not check for strategy correctness).
 import pytest
 import itertools
 
-from early_stopping.EarlyStoppingSimulator import StoppingSimulator
-from early_stopping.strategies.StrategyFactory import StrategyFactory
+from early_stopping.simulator import StoppingSimulator
+from early_stopping.strategies.strategy_factory import StrategyFactory
 
 # create tests that check that running a simulation with a model and strategy config yields exactly the same result 
 # when running with these configs in autogluon (when training)

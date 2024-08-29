@@ -3,7 +3,7 @@ from early_stopping.callbacks import (
     LearningCurveStrategyCallback,
     PatienceStrategyCallback,
 )
-from early_stopping.EarlyStoppingSimulator import StoppingSimulator
+from early_stopping.simulator import StoppingSimulator
 
 ##### Step 1: Define callbacks #####
 
@@ -65,8 +65,8 @@ simulator.rank(
     strategies={
         "autogluon_patience": {"search_method": "grid", "simple": [0, 1]},
         "simple_patience": p,
-        "linear_adaptive_patience": a | b,
-        "polynomial_adaptive_patience": a | b | d,  # | maxp | minp
+        "linear_patience": a | b,
+        "polynomial_patience": a | b | d,  # | maxp | minp
         "feature_patience": a | b | d,  # | maxp | minp
         # add more (see help() output)
     },

@@ -1,4 +1,4 @@
-from .FeaturePatienceStrategy import FeaturePatienceStrategy
+from .feature_patience import FeaturePatienceStrategy
 
 
 class AutoGluonStrategy(FeaturePatienceStrategy):

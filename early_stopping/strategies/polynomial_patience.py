@@ -1,14 +1,14 @@
 from typing import Callable
 
-from .AbstractPatienceStrategy import AbstractPatienceStrategy
+from .abstract_patience_strategy import AbstractPatienceStrategy
 
 
-class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
+class PolynomialPatienceStrategy(AbstractPatienceStrategy):
     """
     Patience Equation: p(x) = a * x^degree + b
     """
 
-    _name = "polynomial_adaptive_patience"
+    _name = "polynomial_patience"
     _short_name = "PP"
 
     def __init__(

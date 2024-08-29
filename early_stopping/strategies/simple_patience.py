@@ -1,7 +1,7 @@
-from .LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
+from .linear_patience import LinearPatienceStrategy
 
 
-class SimplePatienceStrategy(LinearAdaptivePatienceStrategy):
+class SimplePatienceStrategy(LinearPatienceStrategy):
     """
     Patience Equation: p(x) = p
     """

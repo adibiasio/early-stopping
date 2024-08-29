@@ -1,4 +1,4 @@
-from .IterativeStrategy import IterativeStrategy
+from .iterative_strategy import IterativeStrategy
 
 
 class SlidingWindowStrategy(IterativeStrategy):

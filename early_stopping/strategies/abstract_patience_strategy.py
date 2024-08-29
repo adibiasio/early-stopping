@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from typing import Callable
 
-from .IterativeStrategy import IterativeStrategy
+from .iterative_strategy import IterativeStrategy
 
 
 class AbstractPatienceStrategy(IterativeStrategy):
