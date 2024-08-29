@@ -430,6 +430,7 @@ class StoppingSimulator:
         for model, data in model_data.items():
             if filters["models"] and model not in filters["models"]:
                 continue
+            fit_time = meta_data["models"][model]["fit_time"]
 
             eval_sets, metrics, curves = data
             val_index = eval_sets.index("val")
@@ -451,10 +452,11 @@ class StoppingSimulator:
 
                     for strategy_name, (param_names, param_configs) in strategies.items():
                         kwargs = {}
-                        if self.factory.get_strategy_class(
-                            strategy_name
-                        ).needs_curve_metadata:
+                        strategy_class = self.factory.get_strategy_class(strategy_name)
+                        if strategy_class.needs_curve_metadata:
                             kwargs["metadata"] = meta_data
+                        if strategy_class.needs_time_per_iter:
+                            kwargs["time_per_iter"] = fit_time / len(eval_curve)
 
                         for config in param_configs:
                             params = {
@@ -470,13 +472,18 @@ class StoppingSimulator:
                                 strategy=strategy,
                             )
 
+                            total_iter, chosen_iter, opt_iter, chosen_error, opt_error, error_diff, percent_error_diff, percent_iter_diff = strategy.simulate(
+                                stopping_curve=stopping_curve, eval_curve=eval_curve,
+                            )
+
+                            fit_time_cur = fit_time * total_iter / len(eval_curve)
+
                             results.append(
                                 task_info
                                 + [model, metric, eval_set]
                                 + [strategy.name, str(params)]
-                                + strategy.simulate(
-                                    stopping_curve=stopping_curve, eval_curve=eval_curve
-                                )
+                                + [fit_time_cur]
+                                + [total_iter, chosen_iter, opt_iter, chosen_error, opt_error, error_diff, percent_error_diff, percent_iter_diff]
                             )
 
                             self._runCallbacks(
@@ -502,6 +509,7 @@ class StoppingSimulator:
             "eval_set",
             "strategy",
             "params",
+            "fit_time",
             *AbstractStrategy.simulate_columns,
         ]
 

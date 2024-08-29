@@ -7,16 +7,25 @@ from .AbstractStrategy import AbstractStrategy
 
 
 class IterativeStrategy(AbstractStrategy):
+    needs_time_per_iter = True
+
     def __init__(
         self,
+        time_per_iter: float,
         n_iter: int = 0,
         sliding_window: int = 1,
         min_delta: float | int = 0,
+        time_limit: float = -1,
         callbacks: list | None = None,
     ):
         """
         Parameters:
         --------------
+        time_per_iter: float
+            The time in seconds per iteration that the model took to fit.
+            Used by `time_limit`.
+            Will be provided to the class by the factory since `cls.needs_time_per_iter == True`.
+
         n_iter
             maximum number of iterations to train for. Unlimited if 0.
 
@@ -26,11 +35,21 @@ class IterativeStrategy(AbstractStrategy):
         min_delta
             min difference in error to be classified as model relapse
 
+        time_limit: float, default -1
+            `time_limit` corresponds to the time in seconds allowed for fitting the model (simulated).
+            For example, if a model fit 1000 iterations in 500 seconds, and `time_limit=100`,
+            then the stopping strategy will be forced to stop at iteration 200 since it ran out of time.
+            (200 iterations would take 100 seconds).
+            Ignored if -1.
+
         """
         super().__init__()
 
         if callbacks is None:
             callbacks = []
+
+        if not isinstance(time_per_iter, (int, float)):
+            raise ValueError("time_per_iter parameter must be an integer or float.")
 
         if not isinstance(n_iter, int):
             raise ValueError("n_iter parameter must be an integer.")
@@ -43,9 +62,14 @@ class IterativeStrategy(AbstractStrategy):
         if not isinstance(min_delta, (int, float)):
             raise ValueError("min_delta parameter must be an integer or float.")
 
+        if not isinstance(time_limit, (int, float)):
+            raise ValueError("time_limit parameter must be an integer or float.")
+
+        self.time_per_iter = time_per_iter
         self.n_iter = n_iter
         self.sliding_window = sliding_window
         self.min_delta = min_delta
+        self.time_limit = time_limit
 
         self.callbacks = []
         for callback in callbacks:
@@ -68,7 +92,7 @@ class IterativeStrategy(AbstractStrategy):
         best_error = None
         sliding_sum = 0
         iter_wo_improvement = 0
-        patience = self.patience(1)
+        patience = self.patience(0)
         stop = False
 
         self.runCallbacks("before_simulation", strategy=self)
@@ -97,10 +121,15 @@ class IterativeStrategy(AbstractStrategy):
                 best_iter = iter
                 best_error = error
                 iter_wo_improvement = 0
-                patience = self.patience(iter + 1)
+                patience = self.patience(iter)
             else:
                 iter_wo_improvement += 1
                 if iter_wo_improvement >= patience:
+                    stop = True
+
+            if self.time_limit != -1:
+                time_spent = iter * self.time_per_iter
+                if time_spent >= self.time_limit:
                     stop = True
 
             # after iteration callbacks

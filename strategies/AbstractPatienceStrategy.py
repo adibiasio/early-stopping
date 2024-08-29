@@ -6,7 +6,7 @@ from .IterativeStrategy import IterativeStrategy
 
 class AbstractPatienceStrategy(IterativeStrategy):
 
-    def __init__(self, min_patience: int = 10, max_patience: int = 10000, **kwargs):
+    def __init__(self, min_patience: int = -1, max_patience: int = -1, **kwargs):
         super().__init__(**kwargs)
 
         if not isinstance(min_patience, int):
@@ -24,10 +24,11 @@ class AbstractPatienceStrategy(IterativeStrategy):
 
         def func(iter):
             p = base_fn(iter)
-            return min(
-                self.max_patience,
-                max(self.min_patience, p),
-            )
+            if self.min_patience != -1:
+                p = max(self.min_patience, p)
+            if self.max_patience != -1:
+                p = min(self.max_patience, p)
+            return p
 
         return func
 
