@@ -10,8 +10,8 @@ class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
     Patience equation is influenced by features of the dataset currently being "trained" on.
     """
 
-    _name = "feature_patience_v2"
-    _short_name = "FPv2"
+    _name = "feature_patience"
+    _short_name = "FP"
 
     needs_curve_metadata = True
 
