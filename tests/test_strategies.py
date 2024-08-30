@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 
-from strategies.SimplePatienceStrategy import SimplePatienceStrategy
-from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
+from early_stopping.strategies.simple_patience import SimplePatienceStrategy
+from early_stopping.strategies.linear_patience import LinearPatienceStrategy
 
 
 def c(n):
@@ -58,7 +58,7 @@ def test_adaptive_supports_simple_patience(patience, expected_best_iter, expecte
     simple = SimplePatienceStrategy(patience=patience)
     simple_results = simple.simulate(curve=curve)
 
-    adaptive = LinearAdaptivePatienceStrategy(a=0, b=patience)
+    adaptive = LinearPatienceStrategy(a=0, b=patience)
     adaptive_results = adaptive.simulate(curve=curve)
 
     assert simple_results == adaptive_results
@@ -67,7 +67,7 @@ def test_adaptive_supports_simple_patience(patience, expected_best_iter, expecte
 @pytest.mark.parametrize("a, b, expected_best_iter, expected_total_iter, intervals", adaptive_patience_tests())
 def test_adaptive_patience(a, b, expected_best_iter, expected_total_iter, intervals):
     curve = make_curve(*intervals)
-    strategy = LinearAdaptivePatienceStrategy(a=a, b=b)
+    strategy = LinearPatienceStrategy(a=a, b=b)
     results = strategy.simulate(curve=curve)
     total_iter, best_iter, *_ = results
 

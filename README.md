@@ -1,4 +1,5 @@
-# Early Stopping Simulation
+# Early Stopping Simulation [![Python Versions](https://img.shields.io/badge/python-3.10-blue)]()
+
 This project is dedicated towards identifying efficient early stopping strategies in iterative learners.
 
 ## Installation Steps
@@ -22,5 +23,5 @@ $ pip install -r requirements.txt
 
 Step 4: Run the sample script!
 ```
-$ python sample_run.py
+$ python examples/sample_run.py
 ```

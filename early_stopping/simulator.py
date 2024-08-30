@@ -1,4 +1,5 @@
 import itertools
+import json
 import math
 import os
 import random
@@ -8,17 +9,23 @@ from typing import Callable
 import numpy as np
 import pandas as pd
 import ray
+from autogluon.common.loaders import load_json
+from autogluon.common.savers import save_json
+from autogluon.common.utils.s3_utils import (
+    download_s3_folder,
+    is_s3_url,
+    s3_path_to_bucket_prefix,
+)
 from tqdm import tqdm
 
-from callbacks import SimulationCallback
-from strategies.AbstractStrategy import AbstractStrategy
-from strategies.StrategyFactory import StrategyFactory
-from utils.logging import make_logger
-from utils.s3_utils import download_folder, is_s3_url
-from utils.utils import load_json, save_json
+from .callbacks import SimulationCallback
+from .strategies.abstract_strategy import AbstractStrategy
+from .strategies.strategy_factory import StrategyFactory
+from .utils.logging import make_logger
 
 
 class StoppingSimulator:
+    callback_dir_name = "callbacks"
     data_dir_name = "data"
     output_dir_name = "SimulatorRuns"
 
@@ -50,7 +57,7 @@ class StoppingSimulator:
         # 600 configs
         self.default_strategies = {
             "simple_patience": {"patience": (1, 50, 1)},
-            "linear_adaptive_patience": {"a": (0.01, 0.51, 0.05), "b": (1, 50, 1)},
+            "linear_patience": {"a": (0.01, 0.51, 0.05), "b": (1, 50, 1)},
         }
 
     def load_curves(
@@ -113,7 +120,8 @@ class StoppingSimulator:
                 f"Downloading files from s3: {path} to local path: {save_path}"
             )
 
-            download_folder(path=path, local_dir=save_path)
+            bucket, prefix = s3_path_to_bucket_prefix(path)
+            download_s3_folder(bucket=bucket, prefix=prefix, local_path=save_path, error_if_exists=False)
             path = save_path
 
             self.logger.info(f"Downloaded files successfully!")
@@ -347,7 +355,7 @@ class StoppingSimulator:
 
         return strategies
 
-    def addCallback(self, callback: SimulationCallback) -> None:
+    def add_callback(self, callback: SimulationCallback) -> None:
         """
         Adds a SimulationCallback to this simulator object.
 
@@ -360,14 +368,14 @@ class StoppingSimulator:
             raise ValueError(f"Callbacks must be of type {type(SimulationCallback)}!")
 
         if callback.has_save_artifacts:
-            callback.path = self.output_dir
+            callback.set_output_dir(path=os.path.join(self.output_dir, self.callback_dir_name))
 
         if not self.callbacks:
             self.callbacks = []
 
         self.callbacks.append(callback)
 
-    def _runCallbacks(self, method: str, **kwargs):
+    def _run_callbacks(self, method: str, **kwargs):
         if self.callbacks:
             for callback in self.callbacks:
                 func = getattr(callback, method)
@@ -406,7 +414,7 @@ class StoppingSimulator:
         strategies: dict,
         filters: dict,
     ) -> pd.DataFrame:
-        meta_data, model_data = load_json(task)
+        meta_data, model_data = load_json.load(task)
         dataset, fold = self._get_dataset_fold(task)
         task_info = [dataset, fold, meta_data["problem_type"]]
 
@@ -417,7 +425,7 @@ class StoppingSimulator:
         # calling apply on each row to apply simulations?
         # use wrapper fn to do all the strategy and callback setup steps
 
-        self._runCallbacks(
+        self._run_callbacks(
             "before_task",
             dataset=dataset,
             fold=fold,
@@ -442,11 +450,6 @@ class StoppingSimulator:
                     if filters["eval_sets"] and eval_set not in filters["eval_sets"]:
                         continue
 
-                    if val_index == -1:
-                        raise ValueError(
-                            "Validation Set not Included in Learning Curves!"
-                        )
-
                     stopping_curve = curves[i][val_index]  # always stop based on val
                     eval_curve = curves[i][j]
 
@@ -464,7 +467,7 @@ class StoppingSimulator:
                             }
                             strategy = self.factory.make_strategy(strategy_name, **params, **kwargs)
 
-                            self._runCallbacks(
+                            self._run_callbacks(
                                 "before_strategy",
                                 model=model,
                                 metric=metric,
@@ -486,7 +489,7 @@ class StoppingSimulator:
                                 + [total_iter, chosen_iter, opt_iter, chosen_error, opt_error, error_diff, percent_error_diff, percent_iter_diff]
                             )
 
-                            self._runCallbacks(
+                            self._run_callbacks(
                                 "after_strategy",
                                 model=model,
                                 metric=metric,
@@ -494,7 +497,7 @@ class StoppingSimulator:
                                 strategy=strategy,
                             )
 
-        self._runCallbacks(
+        self._run_callbacks(
             "after_task",
             dataset=dataset,
             fold=fold,
@@ -540,8 +543,6 @@ class StoppingSimulator:
         ranks = ranks.groupby("groups")["rank"].mean()
         ranks = ranks.sort_values().reset_index()
 
-        import json
-
         ranks["strategy"] = ranks["groups"].apply(lambda x: x[0])
         ranks["params"] = ranks["groups"].apply(
             lambda x: json.loads(x[1].replace("'", '"'))
@@ -573,9 +574,6 @@ class StoppingSimulator:
 
         self.search_method = search_method
 
-        # output_dir
-        import time
-
         if not isinstance(output_dir, str):
             raise ValueError(f"Output directory: {output_dir} must be a string!")
         if not os.path.exists(output_dir):
@@ -586,7 +584,7 @@ class StoppingSimulator:
         # callbacks
         if callbacks:
             for callback in callbacks:
-                self.addCallback(callback)
+                self.add_callback(callback)
 
         # seed
         if not isinstance(seed, int):
@@ -654,7 +652,7 @@ class StoppingSimulator:
                     ):
                         start, end, step = val
                         params[param] = np.arange(start, end + step, step).tolist()
-                    elif type(val) == list and all(
+                    elif isinstance(val, list) and all(
                         isinstance(num, (float, int)) for num in val
                     ):
                         # already properly formatted
@@ -700,7 +698,7 @@ class StoppingSimulator:
                 )
 
         strategy_path = os.path.join(self.output_dir, "strategies.json")
-        save_json(strategy_path, strategies)
+        save_json.save(strategy_path, strategies)
 
         self.logger.debug(f"Saved strategy dictionary to {strategy_path}!")
 

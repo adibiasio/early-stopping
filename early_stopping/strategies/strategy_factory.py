@@ -1,16 +1,14 @@
 from typing import Type
 
-from .AbstractStrategy import AbstractStrategy
-from .AutoGluonStrategy import AutoGluonStrategy
-from .FeaturePatienceStrategy import FeaturePatienceStrategy
-from .FixedIterationStrategy import FixedIterationStrategy
-from .LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
-from .MinDeltaStrategy import MinDeltaStrategy
-from .PolynomialAdaptivePatienceStrategy import (
-    PolynomialAdaptivePatienceStrategy,
-)
-from .SimplePatienceStrategy import SimplePatienceStrategy
-from .SlidingWindowStrategy import SlidingWindowStrategy
+from .abstract_strategy import AbstractStrategy
+from .autogluon_patience import AutoGluonStrategy
+from .feature_patience import FeaturePatienceStrategy
+from .fixed_iterations import FixedIterationStrategy
+from .linear_patience import LinearPatienceStrategy
+from .min_delta import MinDeltaStrategy
+from .polynomial_patience import PolynomialPatienceStrategy
+from .simple_patience import SimplePatienceStrategy
+from .sliding_window import SlidingWindowStrategy
 
 
 class StrategyFactory:
@@ -33,12 +31,12 @@ class StrategyFactory:
 
         Strategies:
             simple_patience: SimplePatienceStrategy
-                p(x) = p
+                p(x) = b
 
-            linear_adaptive_patience: LinearAdaptivePatienceStrategy
+            linear_patience: LinearPatienceStrategy
                 p(x) = ax + b
 
-            polynomial_adaptive_patience: PolynomialAdaptivePatienceStrategy
+            polynomial_patience: PolynomialPatienceStrategy
                 p(x) = ax^n + b
 
             feature_patience: FeaturePatienceStrategy
@@ -48,25 +46,19 @@ class StrategyFactory:
                 Feature patience with hardcoded parameter values reflecting
                 AutoGluon's default strategy settings:
                     a = 0.3
-                    b = 10
-                    n = 1
-                    minp = 20
-                    maxp = 300
+                    b = 20
+                    degree = 1
+                    max_offset = 300
+                    max_patience = 10000
 
         Each of the strategies listed above support variations with sliding window
         and minimum delta. Read more about these stopping strategies in the "Non-Patience
-        Based" Stopping Strategies section. These variations follow the strategy naming
-        scheme below, assuming the original name is STRATEGY:
+        Based" Stopping Strategies section. 
 
-            Variations:
-                sliding_window_STRATEGY
-                STRATEGY_with_min_delta
-                sliding_window_STRATEGY_with_min_delta
-
-        To use these variations, simply call make_strategy with the umbrella strategy name
+        To use these variations, simply call make_strategy with your supported strategy name
         and relevant parameters for that variation. e.g.
             factory = StrategyFactory()
-            factory.make_strategy("simple_patience", min_delta=0.05) ==> simple_patience_with_min_delta
+            factory.make_strategy("simple_patience", min_delta=0.05) ==> simple_patience with min_delta
 
     Non-Patience Based Stopping Strategies:
         The following strategies do not utilize patience when determining to stop.
@@ -87,8 +79,8 @@ class StrategyFactory:
 
     _strategy_class_map = {
         "simple_patience": SimplePatienceStrategy,
-        "linear_adaptive_patience": LinearAdaptivePatienceStrategy,
-        "polynomial_adaptive_patience": PolynomialAdaptivePatienceStrategy,
+        "linear_patience": LinearPatienceStrategy,
+        "polynomial_patience": PolynomialPatienceStrategy,
         "feature_patience": FeaturePatienceStrategy,
         "autogluon_patience": AutoGluonStrategy,
         "fixed_iteration": FixedIterationStrategy,

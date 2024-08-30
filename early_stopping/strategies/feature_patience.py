@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from .PolynomialAdaptivePatienceStrategy import (
-    PolynomialAdaptivePatienceStrategy,
-)
+from .polynomial_patience import PolynomialPatienceStrategy
 
 
-class FeaturePatienceStrategy(PolynomialAdaptivePatienceStrategy):
+class FeaturePatienceStrategy(PolynomialPatienceStrategy):
     """
     Patience equation is influenced by features of the dataset currently being "trained" on.
     """

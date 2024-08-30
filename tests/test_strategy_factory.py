@@ -1,21 +1,19 @@
 import pytest
 
-from strategies.FixedIterationStrategy import FixedIterationStrategy
-from strategies.LinearAdaptivePatienceStrategy import LinearAdaptivePatienceStrategy
-from strategies.MinDeltaStrategy import MinDeltaStrategy
-from strategies.PolynomialAdaptivePatienceStrategy import (
-    PolynomialAdaptivePatienceStrategy,
-)
-from strategies.SimplePatienceStrategy import SimplePatienceStrategy
-from strategies.SlidingWindowStrategy import SlidingWindowStrategy
-from strategies.StrategyFactory import StrategyFactory
+from early_stopping.strategies.fixed_iterations import FixedIterationStrategy
+from early_stopping.strategies.linear_patience import LinearPatienceStrategy
+from early_stopping.strategies.min_delta import MinDeltaStrategy
+from early_stopping.strategies.polynomial_patience import PolynomialPatienceStrategy
+from early_stopping.strategies.simple_patience import SimplePatienceStrategy
+from early_stopping.strategies.sliding_window import SlidingWindowStrategy
+from early_stopping.strategies.strategy_factory import StrategyFactory
 
 
 def strategy_classes():
     return [
         ("simple_patience", SimplePatienceStrategy),
-        ("linear_adaptive_patience", LinearAdaptivePatienceStrategy),
-        ("polynomial_adaptive_patience", PolynomialAdaptivePatienceStrategy),
+        ("linear_patience", LinearPatienceStrategy),
+        ("polynomial_patience", PolynomialPatienceStrategy),
         ("fixed_iteration", FixedIterationStrategy),
         ("sliding_window", SlidingWindowStrategy),
         ("min_delta", MinDeltaStrategy),
@@ -32,8 +30,8 @@ def test_strategy_types(strategy, strategy_type, factory):
 def patience_classes():
     return [
         "simple_patience",
-        "linear_adaptive_patience",
-        "polynomial_adaptive_patience",
+        "linear_patience",
+        "polynomial_patience",
     ]
 
 

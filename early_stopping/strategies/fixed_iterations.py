@@ -1,6 +1,6 @@
 from typing import List
 
-from .AbstractStrategy import AbstractStrategy
+from .abstract_strategy import AbstractStrategy
 
 
 class FixedIterationStrategy(AbstractStrategy):

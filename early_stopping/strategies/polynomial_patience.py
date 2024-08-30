@@ -1,14 +1,14 @@
 from typing import Callable
 
-from .AbstractPatienceStrategy import AbstractPatienceStrategy
+from .abstract_patience_strategy import AbstractPatienceStrategy
 
 
-class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
+class PolynomialPatienceStrategy(AbstractPatienceStrategy):
     """
     Patience Equation: p(x) = a * x^degree + b
     """
 
-    _name = "polynomial_adaptive_patience"
+    _name = "polynomial_patience"
     _short_name = "PP"
 
     def __init__(
@@ -38,9 +38,6 @@ class PolynomialAdaptivePatienceStrategy(AbstractPatienceStrategy):
             return round(self.a * (iter**self.degree) + self.b)
 
         return func
-
-    def _base_name(self) -> str:
-        return self._name
 
     @classmethod
     def kwargs(cls) -> dict[str, str]:

@@ -1,12 +1,46 @@
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
-from .AbstractStrategy import AbstractStrategy
+from .abstract_strategy import AbstractStrategy
+
+if TYPE_CHECKING:
+    from ..callbacks import IterativeStrategyCallback
 
 
 class IterativeStrategy(AbstractStrategy):
+    """
+    Framework for a strategy that determines when to stop by iterating
+    over the values of the learning curve.
+
+    Parameters:
+    --------------
+    time_per_iter: float
+        The time in seconds per iteration that the model took to fit.
+        Used by `time_limit`.
+        Will be provided to the class by the factory since `cls.needs_time_per_iter == True`.
+
+    n_iter: int, default = 0
+        Maximum number of iterations to train for. Unlimited if 0.
+
+    sliding_window: int, default = 1
+        Window size for averaging last n errors.
+
+    min_delta: float | int, default = 0
+        Minimum decrease in error to qualify as an improvement in model performance.
+
+    time_limit: float, default = -1
+        `time_limit` corresponds to the time in seconds allowed for fitting the model (simulated).
+        For example, if a model fit 1000 iterations in 500 seconds, and `time_limit=100`,
+        then the stopping strategy will be forced to stop at iteration 200 since it ran out of time.
+        (200 iterations would take 100 seconds).
+        Ignored if -1.
+
+    callbacks: list[IterativeStrategyCallback], default = []
+        List of IterativeStrategyCallback objects, whose methods will be called throughout the
+        simulation process.
+    """
+
     needs_time_per_iter = True
 
     def __init__(
@@ -16,37 +50,9 @@ class IterativeStrategy(AbstractStrategy):
         sliding_window: int = 1,
         min_delta: float | int = 0,
         time_limit: float = -1,
-        callbacks: list | None = None,
+        callbacks: list[IterativeStrategyCallback] = [],
     ):
-        """
-        Parameters:
-        --------------
-        time_per_iter: float
-            The time in seconds per iteration that the model took to fit.
-            Used by `time_limit`.
-            Will be provided to the class by the factory since `cls.needs_time_per_iter == True`.
-
-        n_iter
-            maximum number of iterations to train for. Unlimited if 0.
-
-        sliding_window
-            window size for averaging last n errors
-
-        min_delta
-            min difference in error to be classified as model relapse
-
-        time_limit: float, default -1
-            `time_limit` corresponds to the time in seconds allowed for fitting the model (simulated).
-            For example, if a model fit 1000 iterations in 500 seconds, and `time_limit=100`,
-            then the stopping strategy will be forced to stop at iteration 200 since it ran out of time.
-            (200 iterations would take 100 seconds).
-            Ignored if -1.
-
-        """
         super().__init__()
-
-        if callbacks is None:
-            callbacks = []
 
         if not isinstance(time_per_iter, (int, float)):
             raise ValueError("time_per_iter parameter must be an integer or float.")
@@ -73,20 +79,26 @@ class IterativeStrategy(AbstractStrategy):
 
         self.callbacks = []
         for callback in callbacks:
-            self.addCallback(callback)
+            self.add_callback(callback)
 
     # TODO: ensure that for patience of 1 million and 2 million there are the same ranks
     def _run(self, curve: list[float]):
         """
+        Traces through the learning curve and decides when to stop.
+
         Parameters:
-        --------------
-        curve
+        -----------
+        curve: list[float]
+            A list of performance metrics calculated at each iteration
+            of the training process.
 
-        Return:
-        --------------
-        best iteration (zero indexed)
-
-        total iterations (zero indexed)
+        Returns:
+        --------
+        chosen_iter: int (zero indexed)
+            The iteration chosen as the "best" iteration (lowest observed error)
+            according to the stopping strategy and its parameters.
+        total iter: int (zero indexed)
+            The total number of iterations the strategy ran before stopping.
         """
         best_iter = 0
         best_error = None
@@ -95,12 +107,12 @@ class IterativeStrategy(AbstractStrategy):
         patience = self.patience(0)
         stop = False
 
-        self.runCallbacks("before_simulation", strategy=self)
+        self.run_callbacks("before_simulation", strategy=self)
 
         for iter, error in enumerate(curve):
             if self.n_iter != 0 and iter >= self.n_iter:
                 break
-            self.runCallbacks(
+            stop = stop or self.run_callbacks(
                 "before_iter",
                 strategy=self,
                 iter=iter,
@@ -108,6 +120,9 @@ class IterativeStrategy(AbstractStrategy):
                 iter_wo_improvement=iter_wo_improvement,
                 patience=patience,
             )
+
+            if stop:
+                break
 
             if self.sliding_window > 1:
                 n = min(iter + 1, self.sliding_window)
@@ -132,8 +147,7 @@ class IterativeStrategy(AbstractStrategy):
                 if time_spent >= self.time_limit:
                     stop = True
 
-            # after iteration callbacks
-            self.runCallbacks(
+            stop = stop or self.run_callbacks(
                 "after_iter",
                 strategy=self,
                 iter=iter,
@@ -145,11 +159,11 @@ class IterativeStrategy(AbstractStrategy):
             if stop:
                 break
 
-        self.runCallbacks("after_simulation", strategy=self)
+        self.run_callbacks("after_simulation", strategy=self)
         return best_iter, iter
 
-    def addCallback(self, new_callback):
-        from callbacks import IterativeStrategyCallback
+    def add_callback(self, new_callback):
+        from ..callbacks import IterativeStrategyCallback
 
         if not isinstance(new_callback, IterativeStrategyCallback):
             raise ValueError(f"Invalid callback={new_callback}")
@@ -159,14 +173,13 @@ class IterativeStrategy(AbstractStrategy):
         else:
             self.callbacks = [new_callback]
 
-    def runCallbacks(self, method: str, **kwargs):
-        # TODO: doesn't support stopping pased on ret value of callback
-        # by using function for running callbacks like this
+    def run_callbacks(self, method: str, **kwargs) -> True:
+        stop = False
         if self.callbacks:
             for callback in self.callbacks:
                 func = getattr(callback, method)
-                if func(**kwargs):
-                    break
+                stop = stop or func(**kwargs)
+        return stop
 
     @property
     def patience(self) -> Callable[[int], int]:

@@ -1,7 +1,12 @@
+import os
 from abc import ABC
 
-from strategies.AbstractStrategy import AbstractStrategy
-from strategies.IterativeStrategy import IterativeStrategy
+import numpy as np
+import seaborn as sns
+from matplotlib import pyplot as plt
+
+from .strategies.abstract_strategy import AbstractStrategy
+from .strategies.iterative_strategy import IterativeStrategy
 
 ###########################################################
 ###################### Base Classes #######################
@@ -58,7 +63,7 @@ class SimulationCallback(ABC):
         self, strategy_callback: StrategyCallback, path: str | None = None
     ) -> None:
         self.strategy_callback = strategy_callback
-        self.path = path
+        self.set_output_dir(path=path)
 
     def before_task(
         self,
@@ -94,6 +99,13 @@ class SimulationCallback(ABC):
         strategy: AbstractStrategy,
     ):
         """Run after the strategy simulation process."""
+
+    def set_output_dir(self, path: str):
+        """Set output_dir path for any save artifacts"""
+        if self.has_save_artifacts:
+            self.path = path
+            if not os.path.exists(self.path):
+                os.mkdir(self.path)
 
 
 ###########################################################
@@ -189,11 +201,6 @@ class GraphSimulationCallback(SimulationCallback):
             strategies: dict,
             filters: dict,
     ):
-        import math
-
-        import numpy as np
-        from matplotlib import pyplot as plt
-
         total_curves = 0
         for model, data in curve_data.items():
             if filters["models"] and model not in filters["models"]:
@@ -242,8 +249,6 @@ class GraphSimulationCallback(SimulationCallback):
         self.figure.legend(*self.legend)
         self.figure.tight_layout(pad=2.0)
 
-        import os
-
         file_name = self.strategy_callback.file_name
         file_name = f"{file_name}_{dataset}_{fold}"
         # change path to self.path, filename.split(".")[0], filename-dataset-fold)?
@@ -256,7 +261,7 @@ class GraphSimulationCallback(SimulationCallback):
         self.results = {}
         # TODO: maybe instead of always creating new callback, I can just update self.results field
         new_callback = self.strategy_callback(results=self.results)
-        strategy.addCallback(new_callback=new_callback)
+        strategy.add_callback(new_callback=new_callback)
 
     def after_strategy(
         self, model: str, metric: str, eval_set: str, strategy: IterativeStrategy
@@ -278,8 +283,6 @@ class GraphSimulationCallback(SimulationCallback):
         x_label = x
         x = kwargs[x_label]
         del kwargs[x_label]
-
-        import seaborn as sns
 
         for label, line in kwargs.items():
             sns.lineplot(x=x, y=line, ax=ax, label=label)
