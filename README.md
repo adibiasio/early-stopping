@@ -6,22 +6,22 @@ This project is dedicated towards identifying efficient early stopping strategie
 
 Step 1: Clone this repository and navigate to its root directory
 ```
-$ git clone https://github.com/adibiasio/early-stopping.git
-$ cd early-stopping
+git clone https://github.com/adibiasio/early-stopping.git
+cd early-stopping
 ```
 
 Step 2: Make a virtual environment and activate it
 ```
-$ python -m venv .venv
-$ source .venv/bin/activate
+python -m venv .venv
+source .venv/bin/activate
 ```
 
-Step 3: Install all required packages
+Step 3: Source install
 ```
-$ pip install -r requirements.txt
+pip install -e .
 ```
 
 Step 4: Run the sample script!
 ```
-$ python examples/sample_run.py
+python examples/sample_run.py
 ```
