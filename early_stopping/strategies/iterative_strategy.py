@@ -1,15 +1,18 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from .abstract_strategy import AbstractStrategy
+
+if TYPE_CHECKING:
+    from ..callbacks import IterativeStrategyCallback
 
 
 class IterativeStrategy(AbstractStrategy):
     """
     Framework for a strategy that determines when to stop by iterating
     over the values of the learning curve.
-    
+
     Parameters:
     --------------
     time_per_iter: float
@@ -32,8 +35,8 @@ class IterativeStrategy(AbstractStrategy):
         then the stopping strategy will be forced to stop at iteration 200 since it ran out of time.
         (200 iterations would take 100 seconds).
         Ignored if -1.
-    
-    callbacks: list, default = []
+
+    callbacks: list[IterativeStrategyCallback], default = []
         List of IterativeStrategyCallback objects, whose methods will be called throughout the
         simulation process.
     """
@@ -47,7 +50,7 @@ class IterativeStrategy(AbstractStrategy):
         sliding_window: int = 1,
         min_delta: float | int = 0,
         time_limit: float = -1,
-        callbacks: list = [],
+        callbacks: list[IterativeStrategyCallback] = [],
     ):
         super().__init__()
 
@@ -76,7 +79,7 @@ class IterativeStrategy(AbstractStrategy):
 
         self.callbacks = []
         for callback in callbacks:
-            self.addCallback(callback)
+            self.add_callback(callback)
 
     # TODO: ensure that for patience of 1 million and 2 million there are the same ranks
     def _run(self, curve: list[float]):
@@ -104,12 +107,12 @@ class IterativeStrategy(AbstractStrategy):
         patience = self.patience(0)
         stop = False
 
-        self.runCallbacks("before_simulation", strategy=self)
+        self.run_callbacks("before_simulation", strategy=self)
 
         for iter, error in enumerate(curve):
             if self.n_iter != 0 and iter >= self.n_iter:
                 break
-            stop = stop or self.runCallbacks(
+            stop = stop or self.run_callbacks(
                 "before_iter",
                 strategy=self,
                 iter=iter,
@@ -144,7 +147,7 @@ class IterativeStrategy(AbstractStrategy):
                 if time_spent >= self.time_limit:
                     stop = True
 
-            stop = stop or self.runCallbacks(
+            stop = stop or self.run_callbacks(
                 "after_iter",
                 strategy=self,
                 iter=iter,
@@ -156,10 +159,10 @@ class IterativeStrategy(AbstractStrategy):
             if stop:
                 break
 
-        self.runCallbacks("after_simulation", strategy=self)
+        self.run_callbacks("after_simulation", strategy=self)
         return best_iter, iter
 
-    def addCallback(self, new_callback):
+    def add_callback(self, new_callback):
         from ..callbacks import IterativeStrategyCallback
 
         if not isinstance(new_callback, IterativeStrategyCallback):
@@ -170,7 +173,7 @@ class IterativeStrategy(AbstractStrategy):
         else:
             self.callbacks = [new_callback]
 
-    def runCallbacks(self, method: str, **kwargs) -> True:
+    def run_callbacks(self, method: str, **kwargs) -> True:
         stop = False
         if self.callbacks:
             for callback in self.callbacks:

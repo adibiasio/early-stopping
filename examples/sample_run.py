@@ -27,10 +27,11 @@ simulator = StoppingSimulator(
 ##### Step 3: Load your learning curves #####
 
 # point to local directory
-path = "curves/3/" # limit to /adult/0 for much faster toy runs
+path = "curves/3/adult/0" # limit to /adult/0 for much faster toy runs
 
 # point to s3 bucket
 # path = "s3://andrew-bench-dev/aggregated/tabular/ag_bench_learning_curves_full_20240815T102317/learning_curves/"
+# path = "s3://andrew-bench/curves/3/"
 
 # if pointing to s3, files will be downloaded to output run folder by default
 # provide alternative location here:

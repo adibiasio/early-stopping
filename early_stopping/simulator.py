@@ -355,7 +355,7 @@ class StoppingSimulator:
 
         return strategies
 
-    def addCallback(self, callback: SimulationCallback) -> None:
+    def add_callback(self, callback: SimulationCallback) -> None:
         """
         Adds a SimulationCallback to this simulator object.
 
@@ -368,16 +368,14 @@ class StoppingSimulator:
             raise ValueError(f"Callbacks must be of type {type(SimulationCallback)}!")
 
         if callback.has_save_artifacts:
-            callback.path = os.path.join(self.output_dir, self.callback_dir_name)
-            if not os.path.exists(callback.path):
-                os.mkdir(callback.path)
+            callback.set_output_dir(path=os.path.join(self.output_dir, self.callback_dir_name))
 
         if not self.callbacks:
             self.callbacks = []
 
         self.callbacks.append(callback)
 
-    def _runCallbacks(self, method: str, **kwargs):
+    def _run_callbacks(self, method: str, **kwargs):
         if self.callbacks:
             for callback in self.callbacks:
                 func = getattr(callback, method)
@@ -427,7 +425,7 @@ class StoppingSimulator:
         # calling apply on each row to apply simulations?
         # use wrapper fn to do all the strategy and callback setup steps
 
-        self._runCallbacks(
+        self._run_callbacks(
             "before_task",
             dataset=dataset,
             fold=fold,
@@ -469,7 +467,7 @@ class StoppingSimulator:
                             }
                             strategy = self.factory.make_strategy(strategy_name, **params, **kwargs)
 
-                            self._runCallbacks(
+                            self._run_callbacks(
                                 "before_strategy",
                                 model=model,
                                 metric=metric,
@@ -491,7 +489,7 @@ class StoppingSimulator:
                                 + [total_iter, chosen_iter, opt_iter, chosen_error, opt_error, error_diff, percent_error_diff, percent_iter_diff]
                             )
 
-                            self._runCallbacks(
+                            self._run_callbacks(
                                 "after_strategy",
                                 model=model,
                                 metric=metric,
@@ -499,7 +497,7 @@ class StoppingSimulator:
                                 strategy=strategy,
                             )
 
-        self._runCallbacks(
+        self._run_callbacks(
             "after_task",
             dataset=dataset,
             fold=fold,
@@ -586,7 +584,7 @@ class StoppingSimulator:
         # callbacks
         if callbacks:
             for callback in callbacks:
-                self.addCallback(callback)
+                self.add_callback(callback)
 
         # seed
         if not isinstance(seed, int):

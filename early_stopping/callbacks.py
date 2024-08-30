@@ -63,7 +63,7 @@ class SimulationCallback(ABC):
         self, strategy_callback: StrategyCallback, path: str | None = None
     ) -> None:
         self.strategy_callback = strategy_callback
-        self.path = path
+        self.set_output_dir(path=path)
 
     def before_task(
         self,
@@ -99,6 +99,13 @@ class SimulationCallback(ABC):
         strategy: AbstractStrategy,
     ):
         """Run after the strategy simulation process."""
+
+    def set_output_dir(self, path: str):
+        """Set output_dir path for any save artifacts"""
+        if self.has_save_artifacts:
+            self.path = path
+            if not os.path.exists(self.path):
+                os.mkdir(self.path)
 
 
 ###########################################################
@@ -254,7 +261,7 @@ class GraphSimulationCallback(SimulationCallback):
         self.results = {}
         # TODO: maybe instead of always creating new callback, I can just update self.results field
         new_callback = self.strategy_callback(results=self.results)
-        strategy.addCallback(new_callback=new_callback)
+        strategy.add_callback(new_callback=new_callback)
 
     def after_strategy(
         self, model: str, metric: str, eval_set: str, strategy: IterativeStrategy

@@ -31,7 +31,7 @@ class StrategyFactory:
 
         Strategies:
             simple_patience: SimplePatienceStrategy
-                p(x) = p
+                p(x) = b
 
             linear_patience: LinearPatienceStrategy
                 p(x) = ax + b
@@ -58,7 +58,7 @@ class StrategyFactory:
         To use these variations, simply call make_strategy with your supported strategy name
         and relevant parameters for that variation. e.g.
             factory = StrategyFactory()
-            factory.make_strategy("simple_patience", min_delta=0.05) ==> simple_patience with min delta
+            factory.make_strategy("simple_patience", min_delta=0.05) ==> simple_patience with min_delta
 
     Non-Patience Based Stopping Strategies:
         The following strategies do not utilize patience when determining to stop.

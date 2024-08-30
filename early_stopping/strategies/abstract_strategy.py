@@ -110,7 +110,7 @@ class AbstractStrategy(ABC):
         chosen_iter: int (zero indexed)
             The iteration chosen as the "best" iteration (lowest observed error)
             according to the stopping strategy and its parameters.
-        total iter: int (zero indexed)
+        total_iter: int (zero indexed)
             The total number of iterations the strategy ran before stopping.
         """
         pass

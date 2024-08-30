@@ -23,5 +23,5 @@ $ pip install -r requirements.txt
 
 Step 4: Run the sample script!
 ```
-$ python sample_run.py
+$ python examples/sample_run.py
 ```
