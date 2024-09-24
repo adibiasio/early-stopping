@@ -110,5 +110,5 @@ class StrategyFactory:
     def help(cls) -> None:
         print("Supported Strategies:\n")
         for name, strategy in cls._strategy_class_map.items():
-            print(f"\t{name}: {strategy.__name__}")
-            print(f"\tValid parameters: {strategy.user_params()}\n")
+            print(f"{name}: {strategy.__name__}")
+            print(f"Valid parameters: {strategy.user_params()}\n")

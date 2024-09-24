@@ -164,7 +164,6 @@ class Visualizations:
 
             df = ranks.copy()
             df = df[df["strategy"] == strategy]
-            df["params"] = df["params"].apply(lambda x: json.loads(x.replace("'", '"')))
 
             paramdf = pd.DataFrame(df["params"].tolist())
             if len(paramdf.columns) != len(set(paramdf.columns)):

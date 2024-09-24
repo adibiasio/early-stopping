@@ -32,6 +32,7 @@ class StoppingSimulator:
     def __init__(
         self,
         search_method: str = "random",
+        path: str | None = None,
         callbacks: list[SimulationCallback] = None,
         output_dir: str = output_dir_name,
         seed: int = 42,
@@ -59,6 +60,9 @@ class StoppingSimulator:
             "simple_patience": {"patience": (1, 50, 1)},
             "linear_patience": {"a": (0.01, 0.51, 0.05), "b": (1, 50, 1)},
         }
+
+        if path:
+            self.load_curves(path=path)
 
     def load_curves(
         self,
@@ -693,7 +697,7 @@ class StoppingSimulator:
                     raise ValueError(f"Invalid search method: {search_method}")
 
                 strategies[strategy] = (param_names, param_configs)
-                self.logger.info(
+                self.logger.debug(
                     f"{strategy}: {len(param_configs)} parameter configurations"
                 )
 
