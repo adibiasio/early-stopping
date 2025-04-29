@@ -1,6 +1,6 @@
 # Early Stopping Simulation [![Python Versions](https://img.shields.io/badge/python-3.10-blue)]()
 
-This project is dedicated towards identifying efficient early stopping strategies in iterative learners.
+This project is dedicated towards identifying efficient early stopping strategies in iterative learners, primarily by exploring adaptive patience functions instead of constant thresholds commonly used in machine learning libraries. 
 
 ## Installation Steps
 
